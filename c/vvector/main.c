@@ -1,10 +1,18 @@
 #include <stdio.h>
-#include <stddef.h>
 
 #include "vvector.h"
 
 
-static int expect_vector(
+typedef struct {
+    unsigned char payload[512];
+    int id;
+} LargeObject;
+
+
+typedef int (*test_function)(void);
+
+
+static int expect_int_vector(
     const char *test_name,
     const vvector *v,
     const int *expected,
@@ -45,12 +53,11 @@ static int test_push_normal(void)
 {
     vvector v;
 
-    if (vvector_init(&v, sizeof(int)) != 0) {
+    if (vvector_init(&v, sizeof(int)) != VVECTOR_OK)
         return 0;
-    }
 
     for (int i = 0; i < 10; ++i) {
-        if (vvector_push_back(&v, &i) != 0) {
+        if (vvector_push_back(&v, &i) != VVECTOR_OK) {
             vvector_destroy(&v);
             return 0;
         }
@@ -62,7 +69,7 @@ static int test_push_normal(void)
     };
 
     const int ok =
-        expect_vector(
+        expect_int_vector(
             "push normal",
             &v,
             expected,
@@ -80,12 +87,11 @@ static int test_get(void)
 {
     vvector v;
 
-    if (vvector_init(&v, sizeof(int)) != 0) {
+    if (vvector_init(&v, sizeof(int)) != VVECTOR_OK)
         return 0;
-    }
 
     for (int i = 0; i < 10; ++i) {
-        if (vvector_push_back(&v, &i) != 0) {
+        if (vvector_push_back(&v, &i) != VVECTOR_OK) {
             vvector_destroy(&v);
             return 0;
         }
@@ -93,21 +99,18 @@ static int test_get(void)
 
     int value = -1;
 
-    if (vvector_get(&v, 5, &value) != 0) {
+    vvector_result result =
+        vvector_get(&v, 5, &value);
+
+    if (result != VVECTOR_OK || value != 5) {
         vvector_destroy(&v);
         return 0;
     }
 
-    if (value != 5) {
-        vvector_destroy(&v);
-        return 0;
-    }
+    result =
+        vvector_get(&v, 99, &value);
 
-    /*
-     * Index invalid: ne intereseaza ca functia
-     * sa raporteze eroare, nu codul numeric exact.
-     */
-    if (vvector_get(&v, 99, &value) == 0) {
+    if (result != VVECTOR_ERROR_OUT_OF_BOUNDS) {
         vvector_destroy(&v);
         return 0;
     }
@@ -122,26 +125,30 @@ static int test_pop_back(void)
 {
     vvector v;
 
-    if (vvector_init(&v, sizeof(int)) != 0) {
+    if (vvector_init(&v, sizeof(int)) != VVECTOR_OK)
         return 0;
-    }
 
     for (int i = 0; i < 3; ++i) {
-        if (vvector_push_back(&v, &i) != 0) {
+        if (vvector_push_back(&v, &i) != VVECTOR_OK) {
             vvector_destroy(&v);
             return 0;
         }
     }
 
-    if (vvector_pop_back(&v) != 0) {
+    const vvector_result result =
+        vvector_pop_back(&v);
+
+    if (result != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
 
-    const int expected[] = {0, 1};
+    const int expected[] = {
+        0, 1
+    };
 
     const int ok =
-        expect_vector(
+        expect_int_vector(
             "pop_back",
             &v,
             expected,
@@ -158,18 +165,15 @@ static int test_pop_back_empty(void)
 {
     vvector v;
 
-    if (vvector_init(&v, sizeof(int)) != 0) {
+    if (vvector_init(&v, sizeof(int)) != VVECTOR_OK)
         return 0;
-    }
 
-    /*
-     * Pop pe vector gol trebuie sa dea eroare.
-     */
-    const int result = vvector_pop_back(&v);
+    const vvector_result result =
+        vvector_pop_back(&v);
 
     vvector_destroy(&v);
 
-    return result != 0;
+    return result == VVECTOR_ERROR_OUT_OF_BOUNDS;
 }
 
 
@@ -177,31 +181,22 @@ static int test_shrink_to_fit(void)
 {
     vvector v;
 
-    if (vvector_init(&v, sizeof(int)) != 0) {
+    if (vvector_init(&v, sizeof(int)) != VVECTOR_OK)
         return 0;
-    }
 
     for (int i = 0; i < 10; ++i) {
-        if (vvector_push_back(&v, &i) != 0) {
+        if (vvector_push_back(&v, &i) != VVECTOR_OK) {
             vvector_destroy(&v);
             return 0;
         }
     }
 
-    /*
-     * size = 10
-     * capacity = 16
-     */
-    if (vvector_pop_back(&v) != 0) {
+    if (vvector_pop_back(&v) != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
 
-    /*
-     * size = 9
-     * capacity = 16
-     */
-    if (vvector_shrink_to_fit(&v) != 0) {
+    if (vvector_shrink_to_fit(&v) != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
@@ -212,7 +207,7 @@ static int test_shrink_to_fit(void)
     };
 
     const int ok =
-        expect_vector(
+        expect_int_vector(
             "shrink_to_fit",
             &v,
             expected,
@@ -231,12 +226,11 @@ static int test_insert(void)
 {
     vvector v;
 
-    if (vvector_init(&v, sizeof(int)) != 0) {
+    if (vvector_init(&v, sizeof(int)) != VVECTOR_OK)
         return 0;
-    }
 
     for (int i = 0; i < 3; ++i) {
-        if (vvector_push_back(&v, &i) != 0) {
+        if (vvector_push_back(&v, &i) != VVECTOR_OK) {
             vvector_destroy(&v);
             return 0;
         }
@@ -244,21 +238,21 @@ static int test_insert(void)
 
     int value = 99;
 
-    if (vvector_insert_at(&v, 0, &value) != 0) {
+    if (vvector_insert_at(&v, 0, &value) != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
 
     value = 88;
 
-    if (vvector_insert_at(&v, 2, &value) != 0) {
+    if (vvector_insert_at(&v, 2, &value) != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
 
     value = 77;
 
-    if (vvector_insert_at(&v, v.size, &value) != 0) {
+    if (vvector_insert_at(&v, v.size, &value) != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
@@ -268,8 +262,8 @@ static int test_insert(void)
     };
 
     const int ok =
-        expect_vector(
-            "insert",
+        expect_int_vector(
+            "insert begin/middle/end",
             &v,
             expected,
             sizeof(expected) / sizeof(expected[0])
@@ -285,21 +279,11 @@ static int test_self_push_back_with_realloc(void)
 {
     vvector v;
 
-    if (vvector_init(&v, sizeof(int)) != 0) {
+    if (vvector_init(&v, sizeof(int)) != VVECTOR_OK)
         return 0;
-    }
 
-    /*
-     * Growth:
-     *
-     * capacity:
-     * 0 -> 4
-     *
-     * Dupa 4 elemente:
-     * size == capacity == 4
-     */
     for (int i = 0; i < 4; ++i) {
-        if (vvector_push_back(&v, &i) != 0) {
+        if (vvector_push_back(&v, &i) != VVECTOR_OK) {
             vvector_destroy(&v);
             return 0;
         }
@@ -310,18 +294,20 @@ static int test_self_push_back_with_realloc(void)
         return 0;
     }
 
-    /*
-     * source pointeaza DIRECT in storage-ul vectorului.
-     *
-     * Urmatorul push trebuie sa faca realloc.
-     *
-     * Dupa apel, source poate fi dangling,
-     * deci NU il mai folosim.
-     */
-    const int *data = (int *)v.data;
-    const int *source = &data[1];
+    const int *data =
+        (const int *)v.data;
 
-    if (vvector_push_back(&v, source) != 0) {
+    const int *source =
+        &data[1];
+
+    /*
+     * source may become dangling after this call.
+     * Do not use it afterwards.
+     */
+    const vvector_result result =
+        vvector_push_back(&v, source);
+
+    if (result != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
@@ -331,7 +317,7 @@ static int test_self_push_back_with_realloc(void)
     };
 
     const int ok =
-        expect_vector(
+        expect_int_vector(
             "self push_back with realloc",
             &v,
             expected,
@@ -348,41 +334,31 @@ static int test_self_insert_without_realloc(void)
 {
     vvector v;
 
-    if (vvector_init(&v, sizeof(int)) != 0) {
+    if (vvector_init(&v, sizeof(int)) != VVECTOR_OK)
         return 0;
-    }
 
-    /*
-     * Rezervam mai mult decat avem nevoie,
-     * astfel incat insert-ul sa NU faca realloc.
-     */
-    if (vvector_reserve(&v, 8) != 0) {
+    if (vvector_reserve(&v, 8) != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
 
     for (int i = 0; i < 4; ++i) {
-        if (vvector_push_back(&v, &i) != 0) {
+        if (vvector_push_back(&v, &i) != VVECTOR_OK) {
             vvector_destroy(&v);
             return 0;
         }
     }
 
-    /*
-     * [0, 1, 2, 3]
-     *        ^
-     *      source
-     *
-     * Inseram valoarea 2 la index 0.
-     *
-     * Asta testeaza cazul in care memmove()
-     * ar putea modifica memoria catre care
-     * pointeaza source.
-     */
-    const int *data = (int *)v.data;
-    const int *source = &data[2];
+    const int *data =
+        (const int *)v.data;
 
-    if (vvector_insert_at(&v, 0, source) != 0) {
+    const int *source =
+        &data[2];
+
+    const vvector_result result =
+        vvector_insert_at(&v, 0, source);
+
+    if (result != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
@@ -392,7 +368,7 @@ static int test_self_insert_without_realloc(void)
     };
 
     const int ok =
-        expect_vector(
+        expect_int_vector(
             "self insert without realloc",
             &v,
             expected,
@@ -410,17 +386,11 @@ static int test_self_insert_with_realloc(void)
 {
     vvector v;
 
-    if (vvector_init(&v, sizeof(int)) != 0) {
+    if (vvector_init(&v, sizeof(int)) != VVECTOR_OK)
         return 0;
-    }
 
-    /*
-     * Dupa 4 push-uri:
-     *
-     * size == capacity == 4
-     */
     for (int i = 0; i < 4; ++i) {
-        if (vvector_push_back(&v, &i) != 0) {
+        if (vvector_push_back(&v, &i) != VVECTOR_OK) {
             vvector_destroy(&v);
             return 0;
         }
@@ -431,14 +401,20 @@ static int test_self_insert_with_realloc(void)
         return 0;
     }
 
-    /*
-     * source pointeaza in bufferul care poate
-     * fi invalidat de realloc().
-     */
-    const int *data = (int *)v.data;
-    const int *source = &data[2];
+    const int *data =
+        (const int *)v.data;
 
-    if (vvector_insert_at(&v, 0, source) != 0) {
+    const int *source =
+        &data[2];
+
+    /*
+     * The insert must grow the buffer.
+     * source may therefore become dangling during the call.
+     */
+    const vvector_result result =
+        vvector_insert_at(&v, 0, source);
+
+    if (result != VVECTOR_OK) {
         vvector_destroy(&v);
         return 0;
     }
@@ -448,7 +424,7 @@ static int test_self_insert_with_realloc(void)
     };
 
     const int ok =
-        expect_vector(
+        expect_int_vector(
             "self insert with realloc",
             &v,
             expected,
@@ -461,7 +437,52 @@ static int test_self_insert_with_realloc(void)
 }
 
 
-typedef int (*test_function)(void);
+static int test_large_object(void)
+{
+    vvector v;
+
+    if (vvector_init(&v, sizeof(LargeObject)) != VVECTOR_OK)
+        return 0;
+
+    LargeObject object = {0};
+    object.id = 1234;
+
+    for (size_t i = 0; i < sizeof(object.payload); ++i) {
+        object.payload[i] =
+            (unsigned char)(i % 256);
+    }
+
+    if (vvector_push_back(&v, &object) != VVECTOR_OK) {
+        vvector_destroy(&v);
+        return 0;
+    }
+
+    LargeObject result = {0};
+
+    if (vvector_get(&v, 0, &result) != VVECTOR_OK) {
+        vvector_destroy(&v);
+        return 0;
+    }
+
+    if (result.id != 1234) {
+        vvector_destroy(&v);
+        return 0;
+    }
+
+    for (size_t i = 0; i < sizeof(result.payload); ++i) {
+        const unsigned char expected =
+            (unsigned char)(i % 256);
+
+        if (result.payload[i] != expected) {
+            vvector_destroy(&v);
+            return 0;
+        }
+    }
+
+    vvector_destroy(&v);
+
+    return 1;
+}
 
 
 static void run_test(
@@ -479,57 +500,6 @@ static void run_test(
         printf("FAIL\n");
         (*failed)++;
     }
-}
-
-
-typedef struct {
-    unsigned char payload[512];
-    int id;
-} LargeObject;
-
-
-static int test_large_object(void)
-{
-    vvector v;
-
-    if (vvector_init(&v, sizeof(LargeObject)) != 0) {
-        return 0;
-    }
-
-    LargeObject object = {0};
-    object.id = 1234;
-
-    for (size_t i = 0; i < sizeof(object.payload); ++i) {
-        object.payload[i] = (unsigned char)(i % 256);
-    }
-
-    if (vvector_push_back(&v, &object) != 0) {
-        vvector_destroy(&v);
-        return 0;
-    }
-
-    LargeObject result = {0};
-
-    if (vvector_get(&v, 0, &result) != 0) {
-        vvector_destroy(&v);
-        return 0;
-    }
-
-    if (result.id != 1234) {
-        vvector_destroy(&v);
-        return 0;
-    }
-
-    for (size_t i = 0; i < sizeof(result.payload); ++i) {
-        if (result.payload[i] != (unsigned char)(i % 256)) {
-            vvector_destroy(&v);
-            return 0;
-        }
-    }
-
-    vvector_destroy(&v);
-
-    return 1;
 }
 
 
