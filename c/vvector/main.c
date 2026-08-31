@@ -8,7 +8,7 @@ static int expect_vector(
     const char *test_name,
     const vvector *v,
     const int *expected,
-    size_t expected_size)
+    const size_t expected_size)
 {
     if (v->size != expected_size) {
         printf(
@@ -318,7 +318,7 @@ static int test_self_push_back_with_realloc(void)
      * Dupa apel, source poate fi dangling,
      * deci NU il mai folosim.
      */
-    int *data = (int *)v.data;
+    const int *data = (int *)v.data;
     const int *source = &data[1];
 
     if (vvector_push_back(&v, source) != 0) {
@@ -379,7 +379,7 @@ static int test_self_insert_without_realloc(void)
      * ar putea modifica memoria catre care
      * pointeaza source.
      */
-    int *data = (int *)v.data;
+    const int *data = (int *)v.data;
     const int *source = &data[2];
 
     if (vvector_insert_at(&v, 0, source) != 0) {
@@ -435,7 +435,7 @@ static int test_self_insert_with_realloc(void)
      * source pointeaza in bufferul care poate
      * fi invalidat de realloc().
      */
-    int *data = (int *)v.data;
+    const int *data = (int *)v.data;
     const int *source = &data[2];
 
     if (vvector_insert_at(&v, 0, source) != 0) {
@@ -466,7 +466,7 @@ typedef int (*test_function)(void);
 
 static void run_test(
     const char *name,
-    test_function test,
+    const test_function test,
     size_t *passed,
     size_t *failed)
 {
@@ -479,6 +479,57 @@ static void run_test(
         printf("FAIL\n");
         (*failed)++;
     }
+}
+
+
+typedef struct {
+    unsigned char payload[512];
+    int id;
+} LargeObject;
+
+
+static int test_large_object(void)
+{
+    vvector v;
+
+    if (vvector_init(&v, sizeof(LargeObject)) != 0) {
+        return 0;
+    }
+
+    LargeObject object = {0};
+    object.id = 1234;
+
+    for (size_t i = 0; i < sizeof(object.payload); ++i) {
+        object.payload[i] = (unsigned char)(i % 256);
+    }
+
+    if (vvector_push_back(&v, &object) != 0) {
+        vvector_destroy(&v);
+        return 0;
+    }
+
+    LargeObject result = {0};
+
+    if (vvector_get(&v, 0, &result) != 0) {
+        vvector_destroy(&v);
+        return 0;
+    }
+
+    if (result.id != 1234) {
+        vvector_destroy(&v);
+        return 0;
+    }
+
+    for (size_t i = 0; i < sizeof(result.payload); ++i) {
+        if (result.payload[i] != (unsigned char)(i % 256)) {
+            vvector_destroy(&v);
+            return 0;
+        }
+    }
+
+    vvector_destroy(&v);
+
+    return 1;
 }
 
 
@@ -546,6 +597,13 @@ int main(void)
     run_test(
         "SELF insert + realloc",
         test_self_insert_with_realloc,
+        &passed,
+        &failed
+    );
+
+    run_test(
+        "large object",
+        test_large_object,
         &passed,
         &failed
     );
