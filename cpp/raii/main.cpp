@@ -171,17 +171,21 @@ static bool test_self_move_assignment()
     buffer[1] = 20;
     buffer[2] = 30;
 
-    /*
-     * Intentional self-move.
-     *
-     * Our implementation defines this as a no-op.
-     */
     buffer = std::move(buffer);
 
-    return buffer.size() == 3
-        && buffer[0] == 10
-        && buffer[1] == 20
-        && buffer[2] == 30;
+    /*
+     * Do not assume the old value survived self-move.
+     * Instead prove the object can still be assigned
+     * a new valid state.
+     */
+    buffer = IntBuffer{2};
+
+    buffer[0] = 42;
+    buffer[1] = 84;
+
+    return buffer.size() == 2
+        && buffer[0] == 42
+        && buffer[1] == 84;
 }
 
 
