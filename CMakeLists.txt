@@ -114,6 +114,76 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     )
 endif()
 
+add_executable(value_categories_lab
+        cpp/value_categories/main.cpp
+)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(value_categories_lab PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wshadow
+    )
+endif()
+
+add_executable(template_deduction_lab
+        cpp/templates/deduction/main.cpp
+)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(template_deduction_lab PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wshadow
+    )
+endif()
+
+add_executable(class_template_box_lab
+        cpp/templates/box/main.cpp
+)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(class_template_box_lab PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wshadow
+    )
+endif()
+
+add_executable(concepts_lab
+        cpp/templates/concepts/main.cpp
+)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(concepts_lab PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wshadow
+    )
+endif()
+
+add_executable(type_deduction_lab
+        cpp/type_deduction/main.cpp
+)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(type_deduction_lab PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wshadow
+    )
+endif()
+
 message(STATUS "C compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "C compiler ID: ${CMAKE_C_COMPILER_ID}")
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
