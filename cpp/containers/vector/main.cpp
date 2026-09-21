@@ -1,7 +1,6 @@
 #include "Vector.h"
 
 #include <cstddef>
-#include <cstdint>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -20,47 +19,44 @@ struct SmallData {
 
 template<typename T>
 void print_addresses(
-    const Vector<T>& vector,
-    const std::size_t modulus)
-{
+    const Vector<T> &vector,
+    const std::size_t modulus) {
     if (vector.empty()) {
         return;
     }
 
     const auto base =
-        reinterpret_cast<std::uintptr_t>(
-            &vector[0]
-        );
+            reinterpret_cast<std::uintptr_t>(
+                &vector[0]
+            );
 
     for (std::size_t i = 0;
          i < vector.size();
          ++i) {
-
         const auto address =
-            reinterpret_cast<std::uintptr_t>(
-                &vector[i]
-            );
+                reinterpret_cast<std::uintptr_t>(
+                    &vector[i]
+                );
 
         std::cout
-            << "v[" << i << "] = "
-            << static_cast<const void*>(
-                &vector[i]
-            )
-            << ", offset = "
-            << (address - base)
-            << ", address % "
-            << modulus
-            << " = "
-            << (address % modulus)
-            << '\n';
+                << "v[" << i << "] = "
+                << static_cast<const void *>(
+                    &vector[i]
+                )
+                << ", offset = "
+                << (address - base)
+                << ", address % "
+                << modulus
+                << " = "
+                << (address % modulus)
+                << '\n';
     }
 }
 
 
-void test_self_copy()
-{
+void test_self_copy() {
     std::cout
-        << "=== SELF COPY WITH REALLOCATION ===\n";
+            << "=== SELF COPY WITH REALLOCATION ===\n";
 
     Vector<std::string> v;
 
@@ -70,11 +66,11 @@ void test_self_copy()
     v.push_back("three");
 
     std::cout
-        << "before: size = "
-        << v.size()
-        << ", capacity = "
-        << v.capacity()
-        << '\n';
+            << "before: size = "
+            << v.size()
+            << ", capacity = "
+            << v.capacity()
+            << '\n';
 
     /*
      * v[0] aliases the vector's own allocation.
@@ -87,18 +83,17 @@ void test_self_copy()
          i < v.size();
          ++i) {
         std::cout
-            << i
-            << ": "
-            << v[i]
-            << '\n';
+                << i
+                << ": "
+                << v[i]
+                << '\n';
     }
 }
 
 
-void test_self_move()
-{
+void test_self_move() {
     std::cout
-        << "\n=== SELF MOVE WITH REALLOCATION ===\n";
+            << "\n=== SELF MOVE WITH REALLOCATION ===\n";
 
     Vector<std::string> v;
 
@@ -121,42 +116,41 @@ void test_self_move()
          i < v.size();
          ++i) {
         std::cout
-            << i
-            << ": "
-            << v[i]
-            << '\n';
+                << i
+                << ": "
+                << v[i]
+                << '\n';
     }
 }
 
 
-void test_alignment()
-{
+void test_alignment() {
     std::cout
-        << "\n=== TYPE LAYOUT ===\n";
+            << "\n=== TYPE LAYOUT ===\n";
 
     std::cout
-        << "sizeof(CacheLineData): "
-        << sizeof(CacheLineData)
-        << '\n';
+            << "sizeof(CacheLineData): "
+            << sizeof(CacheLineData)
+            << '\n';
 
     std::cout
-        << "alignof(CacheLineData): "
-        << alignof(CacheLineData)
-        << '\n';
+            << "alignof(CacheLineData): "
+            << alignof(CacheLineData)
+            << '\n';
 
     std::cout
-        << "sizeof(SmallData): "
-        << sizeof(SmallData)
-        << '\n';
+            << "sizeof(SmallData): "
+            << sizeof(SmallData)
+            << '\n';
 
     std::cout
-        << "alignof(SmallData): "
-        << alignof(SmallData)
-        << '\n';
+            << "alignof(SmallData): "
+            << alignof(SmallData)
+            << '\n';
 
 
     std::cout
-        << "\n=== CACHE LINE DATA ADDRESSES ===\n";
+            << "\n=== CACHE LINE DATA ADDRESSES ===\n";
 
     Vector<CacheLineData> cache_data;
 
@@ -173,7 +167,7 @@ void test_alignment()
 
 
     std::cout
-        << "\n=== SMALL DATA ADDRESSES ===\n";
+            << "\n=== SMALL DATA ADDRESSES ===\n";
 
     Vector<SmallData> small_data;
 
@@ -190,8 +184,7 @@ void test_alignment()
 }
 
 
-bool test_copy_constructor()
-{
+bool test_copy_constructor() {
     Vector<std::string> original;
 
     original.push_back("zero");
@@ -234,7 +227,7 @@ bool test_copy_constructor()
         || copy[1] != "one"
         || copy[2] != "two") {
         return false;
-        }
+    }
 
     /*
      * Verify deep-copy ownership.
@@ -261,15 +254,13 @@ struct ThrowOnCopy {
 
 
     explicit ThrowOnCopy(const int value)
-        : value{value}
-    {
+        : value{value} {
         ++live_count;
     }
 
 
-    ThrowOnCopy(const ThrowOnCopy& other)
-        : value{other.value}
-    {
+    ThrowOnCopy(const ThrowOnCopy &other)
+        : value{other.value} {
         if (copies_before_throw == 0) {
             throw std::runtime_error{
                 "intentional copy failure"
@@ -284,23 +275,20 @@ struct ThrowOnCopy {
     }
 
 
-    ThrowOnCopy(ThrowOnCopy&& other) noexcept
-        : value{other.value}
-    {
+    ThrowOnCopy(ThrowOnCopy &&other) noexcept
+        : value{other.value} {
         other.value = -1;
         ++live_count;
     }
 
 
-    ~ThrowOnCopy()
-    {
+    ~ThrowOnCopy() {
         --live_count;
     }
 };
 
 
-bool test_copy_constructor_exception_safety()
-{
+bool test_copy_constructor_exception_safety() {
     if (ThrowOnCopy::live_count != 0) {
         return false;
     }
@@ -322,7 +310,7 @@ bool test_copy_constructor_exception_safety()
         }
 
         const int live_before_copy =
-            ThrowOnCopy::live_count;
+                ThrowOnCopy::live_count;
 
         /*
          * Copy element 0 successfully.
@@ -335,8 +323,7 @@ bool test_copy_constructor_exception_safety()
 
         try {
             Vector<ThrowOnCopy> copy{original};
-        }
-        catch (const std::runtime_error&) {
+        } catch (const std::runtime_error &) {
             exception_caught = true;
         }
 
@@ -366,7 +353,7 @@ bool test_copy_constructor_exception_safety()
             || original[2].value != 30
             || original[3].value != 40) {
             result = false;
-            }
+        }
     }
 
     /*
@@ -382,8 +369,7 @@ bool test_copy_constructor_exception_safety()
 }
 
 
-bool test_copy_assignment()
-{
+bool test_copy_assignment() {
     Vector<std::string> source;
 
     source.push_back("zero");
@@ -416,7 +402,7 @@ bool test_copy_assignment()
         || source[1] != "one"
         || source[2] != "two") {
         return false;
-        }
+    }
 
     /*
      * Assignment replaces destination's logical value.
@@ -437,7 +423,7 @@ bool test_copy_assignment()
         || destination[1] != "one"
         || destination[2] != "two") {
         return false;
-        }
+    }
 
     /*
      * Deep-copy independence.
@@ -456,8 +442,7 @@ bool test_copy_assignment()
 }
 
 
-bool test_self_copy_assignment()
-{
+bool test_self_copy_assignment() {
     Vector<std::string> v;
 
     v.push_back("zero");
@@ -469,7 +454,7 @@ bool test_self_copy_assignment()
     const std::size_t old_size = v.size();
     const std::size_t old_capacity = v.capacity();
 
-    const Vector<std::string>& self = v;
+    const Vector<std::string> &self = v;
     v = self;
 
     if (v.size() != old_size) {
@@ -484,14 +469,13 @@ bool test_self_copy_assignment()
         || v[1] != "one"
         || v[2] != "two") {
         return false;
-        }
+    }
 
     return true;
 }
 
 
-bool test_copy_assignment_exception_safety()
-{
+bool test_copy_assignment_exception_safety() {
     if (ThrowOnCopy::live_count != 0) {
         return false;
     }
@@ -518,13 +502,13 @@ bool test_copy_assignment_exception_safety()
 
 
         const std::size_t old_size =
-            destination.size();
+                destination.size();
 
         const std::size_t old_capacity =
-            destination.capacity();
+                destination.capacity();
 
         const int live_before_assignment =
-            ThrowOnCopy::live_count;
+                ThrowOnCopy::live_count;
 
 
         /*
@@ -537,8 +521,7 @@ bool test_copy_assignment_exception_safety()
 
         try {
             destination = source;
-        }
-        catch (const std::runtime_error&) {
+        } catch (const std::runtime_error &) {
             exception_caught = true;
         }
 
@@ -608,8 +591,7 @@ bool test_copy_assignment_exception_safety()
 }
 
 
-bool test_move_constructor()
-{
+bool test_move_constructor() {
     Vector<std::string> source;
 
     source.push_back("zero");
@@ -619,10 +601,10 @@ bool test_move_constructor()
     source.reserve(8);
 
     const std::size_t old_size =
-        source.size();
+            source.size();
 
     const std::size_t old_capacity =
-        source.capacity();
+            source.capacity();
 
     /*
      * Save the address of the actual allocation.
@@ -631,8 +613,8 @@ bool test_move_constructor()
      * this allocation rather than allocate/move
      * individual strings.
      */
-    const std::string* old_data =
-        &source[0];
+    const std::string *old_data =
+            &source[0];
 
 
     Vector<std::string> destination{
@@ -655,7 +637,7 @@ bool test_move_constructor()
         || destination[1] != "one"
         || destination[2] != "two") {
         return false;
-        }
+    }
 
 
     /*
@@ -700,8 +682,7 @@ bool test_move_constructor()
 }
 
 
-bool test_move_assignment()
-{
+bool test_move_assignment() {
     Vector<std::string> source;
 
     source.push_back("zero");
@@ -711,13 +692,13 @@ bool test_move_assignment()
     source.reserve(8);
 
     const std::size_t source_size =
-        source.size();
+            source.size();
 
     const std::size_t source_capacity =
-        source.capacity();
+            source.capacity();
 
-    const std::string* source_data =
-        &source[0];
+    const std::string *source_data =
+            &source[0];
 
 
     Vector<std::string> destination;
@@ -750,7 +731,7 @@ bool test_move_assignment()
         || destination[1] != "one"
         || destination[2] != "two") {
         return false;
-        }
+    }
 
 
     /*
@@ -778,14 +759,13 @@ bool test_move_assignment()
     if (source.size() != 1
         || source[0] != "reused") {
         return false;
-        }
+    }
 
     return true;
 }
 
 
-bool test_self_move_assignment()
-{
+bool test_self_move_assignment() {
     Vector<std::string> v;
 
     v.push_back("zero");
@@ -795,19 +775,19 @@ bool test_self_move_assignment()
     v.reserve(8);
 
     const std::size_t old_size =
-        v.size();
+            v.size();
 
     const std::size_t old_capacity =
-        v.capacity();
+            v.capacity();
 
-    const std::string* old_data =
-        &v[0];
+    const std::string *old_data =
+            &v[0];
 
     /*
      * Avoid Clang's explicit self-move warning while
      * still making source and destination the same object.
      */
-    Vector<std::string>& self = v;
+    Vector<std::string> &self = v;
 
     v = std::move(self);
 
@@ -827,69 +807,270 @@ bool test_self_move_assignment()
         || v[1] != "one"
         || v[2] != "two") {
         return false;
-        }
+    }
 
     return true;
 }
 
 
-int main()
-{
+struct EmplaceProbe {
+    static inline int direct_constructions = 0;
+    static inline int copies = 0;
+    static inline int moves = 0;
+
+    int id;
+    std::string name;
+
+    EmplaceProbe(
+        const int id,
+        std::string name
+    )
+        : id{id},
+          name{std::move(name)} {
+        ++direct_constructions;
+    }
+
+    EmplaceProbe(const EmplaceProbe &other)
+        : id{other.id},
+          name{other.name} {
+        ++copies;
+    }
+
+    EmplaceProbe(EmplaceProbe &&other) noexcept
+        : id{other.id},
+          name{std::move(other.name)} {
+        ++moves;
+    }
+};
+
+
+bool test_emplace_back() {
+    EmplaceProbe::direct_constructions = 0;
+    EmplaceProbe::copies = 0;
+    EmplaceProbe::moves = 0;
+
+    Vector<EmplaceProbe> v;
+
+    EmplaceProbe &element =
+            v.emplace_back(
+                42,
+                std::string{"engine"}
+            );
+
+    if (v.size() != 1) {
+        return false;
+    }
+
+    if (element.id != 42
+        || element.name != "engine") {
+        return false;
+    }
+
+    /*
+     * emplace_back should return the actual object
+     * stored inside the vector.
+     */
+    if (&element != &v[0]) {
+        return false;
+    }
+
+    /*
+     * There was no EmplaceProbe object before the call.
+     * It should have been constructed directly in
+     * Vector storage.
+     */
+    if (EmplaceProbe::direct_constructions != 1) {
+        return false;
+    }
+
+    if (EmplaceProbe::copies != 0) {
+        return false;
+    }
+
+    if (EmplaceProbe::moves != 0) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_push_back_self_copy_with_reallocation() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+    v.push_back("two");
+    v.push_back("three");
+
+    /*
+     * With our growth strategy:
+     *
+     * size     = 4
+     * capacity = 4
+     *
+     * So the next insertion must reallocate.
+     */
+    if (v.size() != 4 || v.capacity() != 4) {
+        return false;
+    }
+
+    /*
+     * v[0] refers into the allocation that push_back()
+     * is about to replace.
+     */
+    v.push_back(v[0]);
+
+    if (v.size() != 5) {
+        return false;
+    }
+
+    if (v.capacity() != 8) {
+        return false;
+    }
+
+    /*
+     * Copy semantics:
+     *
+     * the original element must remain unchanged,
+     * and the new element must contain its value.
+     */
+    if (v[0] != "zero"
+        || v[1] != "one"
+        || v[2] != "two"
+        || v[3] != "three"
+        || v[4] != "zero") {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_push_back_self_move_with_reallocation() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+    v.push_back("two");
+    v.push_back("three");
+
+    if (v.size() != 4 || v.capacity() != 4) {
+        return false;
+    }
+
+    /*
+     * Explicitly permit the new element to consume
+     * the value currently stored in v[0].
+     */
+    v.push_back(std::move(v[0]));
+
+    if (v.size() != 5) {
+        return false;
+    }
+
+    if (v.capacity() != 8) {
+        return false;
+    }
+
+    /*
+     * Do NOT assert that v[0] is empty.
+     *
+     * It is moved-from, so its exact value is not
+     * something our test should depend on.
+     *
+     * We only verify that the value reached the newly
+     * appended element and that the unrelated elements
+     * survived correctly.
+     */
+    if (v[1] != "one"
+        || v[2] != "two"
+        || v[3] != "three"
+        || v[4] != "zero") {
+        return false;
+    }
+
+    return true;
+}
+
+
+int main() {
     std::cout
-        << "copy constructor: "
-        << (test_copy_constructor()
-            ? "PASS"
-            : "FAIL")
-        << '\n';
+            << "copy constructor: "
+            << (test_copy_constructor()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
 
     std::cout
-        << "copy constructor exception safety: "
-        << (test_copy_constructor_exception_safety()
-            ? "PASS"
-            : "FAIL")
-        << '\n';
+            << "copy constructor exception safety: "
+            << (test_copy_constructor_exception_safety()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
 
     std::cout
-    << "copy assignment: "
-    << (test_copy_assignment()
-        ? "PASS"
-        : "FAIL")
-    << '\n';
+            << "copy assignment: "
+            << (test_copy_assignment()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
 
     std::cout
-    << "self-copy assignment: "
-    << (test_self_copy_assignment()
-        ? "PASS"
-        : "FAIL")
-    << '\n';
+            << "self-copy assignment: "
+            << (test_self_copy_assignment()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
 
     std::cout
-    << "copy assignment exception safety: "
-    << (test_copy_assignment_exception_safety()
-        ? "PASS"
-        : "FAIL")
-    << '\n';
+            << "copy assignment exception safety: "
+            << (test_copy_assignment_exception_safety()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
 
     std::cout
-    << "move constructor: "
-    << (test_move_constructor()
-        ? "PASS"
-        : "FAIL")
-    << '\n';
+            << "move constructor: "
+            << (test_move_constructor()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
 
     std::cout
-    << "move assignment: "
-    << (test_move_assignment()
-        ? "PASS"
-        : "FAIL")
-    << '\n';
+            << "move assignment: "
+            << (test_move_assignment()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
 
     std::cout
-    << "self-move assignment: "
-    << (test_self_move_assignment()
-        ? "PASS"
-        : "FAIL")
-    << '\n';
+            << "self-move assignment: "
+            << (test_self_move_assignment()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "emplace_back: "
+            << (test_emplace_back()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "push_back self-copy with reallocation: "
+            << (test_push_back_self_copy_with_reallocation()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "push_back self-move with reallocation: "
+            << (test_push_back_self_move_with_reallocation()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
 
     return 0;
 }

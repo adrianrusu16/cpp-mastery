@@ -235,36 +235,34 @@ public:
     }
 
 
-    void push_back(const T &value) {
-        if (size_ == capacity_) {
-            grow_and_append(value);
-            return;
-        }
-
-        std::construct_at(
-            data_ + size_,
-            value
-        );
-
-        ++size_;
+    void push_back(const T& value)
+    {
+        emplace_back(value);
     }
 
+    void push_back(T&& value)
+    {
+        emplace_back(std::move(value));
+    }
 
-    void push_back(T &&value) {
+    template<typename... Args>
+    T &emplace_back(Args &&... args) {
         if (size_ == capacity_) {
-            grow_and_append(
-                std::move(value)
+            return grow_and_emplace(
+                std::forward<Args>(args)...
             );
-
-            return;
         }
 
+        T *new_element = data_ + size_;
+
         std::construct_at(
-            data_ + size_,
-            std::move(value)
+            new_element,
+            std::forward<Args>(args)...
         );
 
         ++size_;
+
+        return *new_element;
     }
 
 private:
@@ -315,47 +313,37 @@ private:
         }
     }
 
-
-    template<typename U>
-    void grow_and_append(U &&value) {
+    template<typename... Args>
+T& grow_and_emplace(Args&&... args)
+    {
         const std::size_t new_capacity =
-                next_capacity();
+            next_capacity();
 
-        if (new_capacity == 0) {
-            throw std::length_error{
-                "Vector cannot allocate storage"
-            };
-        }
-
-        T *new_elements =
-                AllocatorTraits::allocate(
-                    allocator_,
-                    new_capacity
-                );
+        T* new_elements =
+            AllocatorTraits::allocate(
+                allocator_,
+                new_capacity
+            );
 
         std::size_t relocated = 0;
         bool appended_constructed = false;
 
         try {
             /*
-             * Construct the new element BEFORE relocating
-             * existing elements.
+             * Construct the NEW element first.
              *
-             * This makes:
-             *
-             *     v.push_back(v[0]);
-             *
-             * safe even when value aliases our old storage.
+             * This matters if one of args aliases something
+             * inside our existing Vector.
              */
             std::construct_at(
                 new_elements + size_,
-                std::forward<U>(value)
+                std::forward<Args>(args)...
             );
 
             appended_constructed = true;
 
             /*
-             * Now relocate the old objects.
+             * Relocate the existing elements afterward.
              */
             for (; relocated < size_; ++relocated) {
                 std::construct_at(
@@ -365,11 +353,8 @@ private:
                     )
                 );
             }
-        } catch (...) {
-            /*
-             * Only [0, relocated) contains successfully
-             * constructed relocated elements.
-             */
+        }
+        catch (...) {
             while (relocated > 0) {
                 --relocated;
 
@@ -378,10 +363,6 @@ private:
                 );
             }
 
-            /*
-             * The appended object is at a separate location:
-             * new_elements[size_].
-             */
             if (appended_constructed) {
                 std::destroy_at(
                     new_elements + size_
@@ -397,11 +378,6 @@ private:
             throw;
         }
 
-        /*
-         * Everything succeeded.
-         *
-         * Only now do we destroy/deallocate the old state.
-         */
         destroy_old_elements();
 
         if (data_ != nullptr) {
@@ -416,6 +392,8 @@ private:
         capacity_ = new_capacity;
 
         ++size_;
+
+        return data_[size_ - 1];
     }
 
 

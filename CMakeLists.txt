@@ -170,6 +170,20 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     )
 endif()
 
+add_executable(folds_lab
+        cpp/templates/folds/main.cpp
+)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(folds_lab PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wshadow
+    )
+endif()
+
 add_executable(type_deduction_lab
         cpp/type_deduction/main.cpp
 )
