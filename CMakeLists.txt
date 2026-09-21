@@ -184,6 +184,21 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     )
 endif()
 
+add_executable(containers_vector_lab
+        cpp/containers/vector/main.cpp
+        cpp/containers/vector/Vector.h
+)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(containers_vector_lab PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wshadow
+    )
+endif()
+
 message(STATUS "C compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "C compiler ID: ${CMAKE_C_COMPILER_ID}")
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
