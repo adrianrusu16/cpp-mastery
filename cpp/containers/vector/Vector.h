@@ -235,13 +235,11 @@ public:
     }
 
 
-    void push_back(const T& value)
-    {
+    void push_back(const T &value) {
         emplace_back(value);
     }
 
-    void push_back(T&& value)
-    {
+    void push_back(T &&value) {
         emplace_back(std::move(value));
     }
 
@@ -263,6 +261,27 @@ public:
         ++size_;
 
         return *new_element;
+    }
+
+    T &at(const std::size_t index) {
+        if (index >= size_) {
+            throw std::out_of_range{
+                "Vector::at index out of range"
+            };
+        }
+
+        return data_[index];
+    }
+
+
+    const T &at(const std::size_t index) const {
+        if (index >= size_) {
+            throw std::out_of_range{
+                "Vector::at index out of range"
+            };
+        }
+
+        return data_[index];
     }
 
 private:
@@ -314,16 +333,15 @@ private:
     }
 
     template<typename... Args>
-T& grow_and_emplace(Args&&... args)
-    {
+    T &grow_and_emplace(Args &&... args) {
         const std::size_t new_capacity =
-            next_capacity();
+                next_capacity();
 
-        T* new_elements =
-            AllocatorTraits::allocate(
-                allocator_,
-                new_capacity
-            );
+        T *new_elements =
+                AllocatorTraits::allocate(
+                    allocator_,
+                    new_capacity
+                );
 
         std::size_t relocated = 0;
         bool appended_constructed = false;
@@ -353,8 +371,7 @@ T& grow_and_emplace(Args&&... args)
                     )
                 );
             }
-        }
-        catch (...) {
+        } catch (...) {
             while (relocated > 0) {
                 --relocated;
 

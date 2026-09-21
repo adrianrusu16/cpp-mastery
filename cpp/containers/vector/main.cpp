@@ -994,6 +994,82 @@ bool test_push_back_self_move_with_reallocation() {
 }
 
 
+bool test_at_valid_mutable_access() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+    v.push_back("two");
+
+    std::string &element = v.at(1);
+
+    if (element != "one") {
+        return false;
+    }
+
+    /*
+     * Prove that at() returned a reference to
+     * the actual stored element, not a copy.
+     */
+    element = "changed";
+
+    if (v[1] != "changed") {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_at_out_of_range() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+    v.push_back("two");
+
+    bool exception_caught = false;
+
+    try {
+        v.at(3);
+    } catch (const std::out_of_range &) {
+        exception_caught = true;
+    }
+
+    return exception_caught;
+}
+
+
+bool test_at_empty_vector() {
+    Vector<int> v;
+
+    try {
+        v.at(0);
+    } catch (const std::out_of_range &) {
+        return true;
+    }
+
+    return false;
+}
+
+
+bool test_at_const_access() {
+    Vector<std::string> mutable_vector;
+
+    mutable_vector.push_back("zero");
+    mutable_vector.push_back("one");
+    mutable_vector.push_back("two");
+
+    const Vector<std::string> &v =
+            mutable_vector;
+
+    const std::string &element =
+            v.at(1);
+
+    return element == "one";
+}
+
+
 int main() {
     std::cout
             << "copy constructor: "
@@ -1068,6 +1144,34 @@ int main() {
     std::cout
             << "push_back self-move with reallocation: "
             << (test_push_back_self_move_with_reallocation()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "at valid mutable access: "
+            << (test_at_valid_mutable_access()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "at out of range: "
+            << (test_at_out_of_range()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "at empty vector: "
+            << (test_at_empty_vector()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "at const access: "
+            << (test_at_const_access()
                     ? "PASS"
                     : "FAIL")
             << '\n';
