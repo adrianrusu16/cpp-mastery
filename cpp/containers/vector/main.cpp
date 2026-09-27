@@ -67,6 +67,141 @@ struct PopBackProbe {
 };
 
 
+struct ResizeProbe {
+    static inline int live_count = 0;
+    static inline int destructor_calls = 0;
+
+    int value;
+
+    ResizeProbe()
+        : value{0} {
+        ++live_count;
+    }
+
+    explicit ResizeProbe(const int value)
+        : value{value} {
+        ++live_count;
+    }
+
+    ResizeProbe(const ResizeProbe &other)
+        : value{other.value} {
+        ++live_count;
+    }
+
+    ResizeProbe(ResizeProbe &&other) noexcept
+        : value{other.value} {
+        ++live_count;
+    }
+
+    ~ResizeProbe() {
+        --live_count;
+        ++destructor_calls;
+    }
+};
+
+
+struct ThrowOnDefault {
+    static inline int live_count = 0;
+    static inline int destructor_calls = 0;
+    static inline int defaults_before_throw = -1;
+
+    int value = 0;
+
+    ThrowOnDefault() {
+        if (defaults_before_throw == 0) {
+            throw std::runtime_error{
+                "intentional default construction failure"
+            };
+        }
+
+        if (defaults_before_throw > 0) {
+            --defaults_before_throw;
+        }
+
+        ++live_count;
+    }
+
+    explicit ThrowOnDefault(const int value)
+        : value{value} {
+        ++live_count;
+    }
+
+    ThrowOnDefault(const ThrowOnDefault &other)
+        : value{other.value} {
+        ++live_count;
+    }
+
+    ThrowOnDefault(ThrowOnDefault &&other) noexcept
+        : value{other.value} {
+        ++live_count;
+    }
+
+    ~ThrowOnDefault() {
+        --live_count;
+        ++destructor_calls;
+    }
+};
+
+
+struct ResizeRelocationProbe {
+    static inline int live_count = 0;
+    static inline int destructor_calls = 0;
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static inline int copies_before_throw = -1;
+
+    int value = 0;
+
+    ResizeRelocationProbe() {
+        ++live_count;
+    }
+
+    explicit ResizeRelocationProbe(const int value)
+        : value{value} {
+        ++live_count;
+    }
+
+    ResizeRelocationProbe(
+        const ResizeRelocationProbe &other
+    )
+        : value{other.value} {
+        if (copies_before_throw == 0) {
+            throw std::runtime_error{
+                "intentional relocation copy failure"
+            };
+        }
+
+        if (copies_before_throw > 0) {
+            --copies_before_throw;
+        }
+
+        ++copies;
+        ++live_count;
+    }
+
+    /*
+     * Deliberately NOT noexcept.
+     *
+     * Because copying is available,
+     * move_if_noexcept should prefer copying.
+     */
+    ResizeRelocationProbe(
+        ResizeRelocationProbe &&other
+    )
+        : value{other.value} {
+        ++moves;
+        ++live_count;
+
+        other.value = -1;
+    }
+
+    ~ResizeRelocationProbe() {
+        --live_count;
+        ++destructor_calls;
+    }
+};
+
+
 template<typename T>
 void print_addresses(
     const Vector<T> &vector,
@@ -1547,6 +1682,490 @@ bool test_pop_back_destroys_element() {
 }
 
 
+bool test_resize_shrink() {
+    Vector<std::string> v;
+
+    v.reserve(8);
+
+    v.push_back("zero");
+    v.push_back("one");
+    v.push_back("two");
+    v.push_back("three");
+
+    const std::size_t old_capacity =
+            v.capacity();
+
+    v.resize(2);
+
+    if (v.size() != 2) {
+        return false;
+    }
+
+    if (v.capacity() != old_capacity) {
+        return false;
+    }
+
+    if (v[0] != "zero"
+        || v[1] != "one") {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_resize_shrink_destroys_elements() {
+    ResizeProbe::live_count = 0;
+    ResizeProbe::destructor_calls = 0;
+
+    {
+        Vector<ResizeProbe> v;
+
+        v.reserve(4);
+
+        v.emplace_back(10);
+        v.emplace_back(20);
+        v.emplace_back(30);
+        v.emplace_back(40);
+
+        if (ResizeProbe::live_count != 4) {
+            return false;
+        }
+
+        if (ResizeProbe::destructor_calls != 0) {
+            return false;
+        }
+
+        v.resize(2);
+
+        if (v.size() != 2) {
+            return false;
+        }
+
+        if (ResizeProbe::live_count != 2) {
+            return false;
+        }
+
+        if (ResizeProbe::destructor_calls != 2) {
+            return false;
+        }
+
+        if (v[0].value != 10
+            || v[1].value != 20) {
+            return false;
+        }
+    }
+
+    if (ResizeProbe::live_count != 0) {
+        return false;
+    }
+
+    if (ResizeProbe::destructor_calls != 4) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_resize_grow_within_capacity() {
+    Vector<int> v;
+
+    v.reserve(8);
+
+    v.push_back(10);
+    v.push_back(20);
+
+    int *const old_data = v.data();
+    const std::size_t old_capacity =
+            v.capacity();
+
+    v.resize(5);
+
+    if (v.size() != 5) {
+        return false;
+    }
+
+    if (v.capacity() != old_capacity) {
+        return false;
+    }
+
+    /*
+     * Growth fits in existing storage,
+     * so no reallocation should occur.
+     */
+    if (v.data() != old_data) {
+        return false;
+    }
+
+    if (v[0] != 10
+        || v[1] != 20) {
+        return false;
+    }
+
+    /*
+     * resize(count) with no value argument
+     * creates new value-initialized ints.
+     */
+    if (v[2] != 0
+        || v[3] != 0
+        || v[4] != 0) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_resize_grow_within_capacity_exception_safety() {
+    ThrowOnDefault::live_count = 0;
+    ThrowOnDefault::destructor_calls = 0;
+    ThrowOnDefault::defaults_before_throw = -1;
+
+    {
+        Vector<ThrowOnDefault> v;
+
+        v.reserve(5);
+
+        v.emplace_back(10);
+        v.emplace_back(20);
+
+        if (v.size() != 2) {
+            return false;
+        }
+
+        if (ThrowOnDefault::live_count != 2) {
+            return false;
+        }
+
+        const std::size_t old_capacity =
+                v.capacity();
+
+        ThrowOnDefault *const old_data =
+                v.data();
+
+        /*
+         * resize(5) needs three default constructions:
+         *
+         * index 2 -> succeeds
+         * index 3 -> throws
+         */
+        ThrowOnDefault::defaults_before_throw = 1;
+
+        bool exception_caught = false;
+
+        try {
+            v.resize(5);
+        } catch (const std::runtime_error &) {
+            exception_caught = true;
+        }
+
+        if (!exception_caught) {
+            return false;
+        }
+
+        /*
+         * Strong guarantee:
+         * the Vector remains logically unchanged.
+         */
+        if (v.size() != 2) {
+            return false;
+        }
+
+        if (v.capacity() != old_capacity) {
+            return false;
+        }
+
+        if (v.data() != old_data) {
+            return false;
+        }
+
+        if (v[0].value != 10
+            || v[1].value != 20) {
+            return false;
+        }
+
+        /*
+         * Only the two original objects remain alive.
+         */
+        if (ThrowOnDefault::live_count != 2) {
+            return false;
+        }
+
+        /*
+         * The one successfully constructed new object
+         * must have been destroyed during rollback.
+         */
+        if (ThrowOnDefault::destructor_calls != 1) {
+            return false;
+        }
+    }
+
+    if (ThrowOnDefault::live_count != 0) {
+        return false;
+    }
+
+    /*
+     * 1 rollback destruction
+     * +
+     * 2 original elements destroyed by Vector
+     */
+    if (ThrowOnDefault::destructor_calls != 3) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_resize_grow_with_reallocation() {
+    Vector<int> v;
+
+    v.push_back(10);
+    v.push_back(20);
+
+    int *const old_data = v.data();
+
+    v.resize(10);
+
+    if (v.size() != 10) {
+        return false;
+    }
+
+    if (v.capacity() < 10) {
+        return false;
+    }
+
+    /*
+     * Reallocation must have occurred.
+     */
+    if (v.data() == old_data) {
+        return false;
+    }
+
+    if (v[0] != 10
+        || v[1] != 20) {
+        return false;
+    }
+
+    for (std::size_t i = 2; i < 10; ++i) {
+        if (v[i] != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+bool test_resize_reallocation_default_exception_safety() {
+    ThrowOnDefault::live_count = 0;
+    ThrowOnDefault::destructor_calls = 0;
+    ThrowOnDefault::defaults_before_throw = -1;
+
+    {
+        Vector<ThrowOnDefault> v;
+
+        /*
+         * Exactly two slots, so resize(5)
+         * must allocate a new block.
+         */
+        v.reserve(2);
+
+        v.emplace_back(10);
+        v.emplace_back(20);
+
+        ThrowOnDefault *const old_data =
+                v.data();
+
+        const std::size_t old_capacity =
+                v.capacity();
+
+        /*
+         * resize(5) needs three default-constructed
+         * tail elements.
+         *
+         * index 2 -> succeeds
+         * index 3 -> throws
+         */
+        ThrowOnDefault::defaults_before_throw = 1;
+
+        bool exception_caught = false;
+
+        try {
+            v.resize(5);
+        } catch (const std::runtime_error &) {
+            exception_caught = true;
+        }
+
+        if (!exception_caught) {
+            return false;
+        }
+
+        /*
+         * Original Vector must be completely unchanged.
+         */
+        if (v.size() != 2) {
+            return false;
+        }
+
+        if (v.capacity() != old_capacity) {
+            return false;
+        }
+
+        if (v.data() != old_data) {
+            return false;
+        }
+
+        if (v[0].value != 10
+            || v[1].value != 20) {
+            return false;
+        }
+
+        /*
+         * Only the two original objects remain alive.
+         */
+        if (ThrowOnDefault::live_count != 2) {
+            return false;
+        }
+
+        /*
+         * One new tail object was successfully
+         * constructed and then rolled back.
+         */
+        if (ThrowOnDefault::destructor_calls != 1) {
+            return false;
+        }
+    }
+
+    if (ThrowOnDefault::live_count != 0) {
+        return false;
+    }
+
+    /*
+     * 1 rollback destruction
+     * +
+     * 2 original elements at Vector destruction.
+     */
+    if (ThrowOnDefault::destructor_calls != 3) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_resize_reallocation_relocation_exception_safety() {
+    ResizeRelocationProbe::live_count = 0;
+    ResizeRelocationProbe::destructor_calls = 0;
+    ResizeRelocationProbe::copies = 0;
+    ResizeRelocationProbe::moves = 0;
+    ResizeRelocationProbe::copies_before_throw = -1;
+
+    {
+        Vector<ResizeRelocationProbe> v;
+
+        v.reserve(2);
+
+        v.emplace_back(10);
+        v.emplace_back(20);
+
+        ResizeRelocationProbe *const old_data =
+                v.data();
+
+        const std::size_t old_capacity =
+                v.capacity();
+
+        /*
+         * resize(5):
+         *
+         * 1. default-construct indices 2, 3, 4
+         * 2. relocate index 0 -> copy succeeds
+         * 3. relocate index 1 -> copy throws
+         */
+        ResizeRelocationProbe::copies_before_throw = 1;
+
+        bool exception_caught = false;
+
+        try {
+            v.resize(5);
+        } catch (const std::runtime_error &) {
+            exception_caught = true;
+        }
+
+        if (!exception_caught) {
+            return false;
+        }
+
+        /*
+         * Strong guarantee:
+         * original container is unchanged.
+         */
+        if (v.size() != 2) {
+            return false;
+        }
+
+        if (v.capacity() != old_capacity) {
+            return false;
+        }
+
+        if (v.data() != old_data) {
+            return false;
+        }
+
+        if (v[0].value != 10
+            || v[1].value != 20) {
+            return false;
+        }
+
+        /*
+         * move_if_noexcept should have selected copy.
+         */
+        if (ResizeRelocationProbe::copies != 1) {
+            return false;
+        }
+
+        if (ResizeRelocationProbe::moves != 0) {
+            return false;
+        }
+
+        /*
+         * Only the two original objects should
+         * remain alive after rollback.
+         */
+        if (ResizeRelocationProbe::live_count != 2) {
+            return false;
+        }
+
+        /*
+         * Rollback destroys:
+         *
+         * 1 successfully copied old element
+         * +
+         * 3 default-constructed tail elements
+         */
+        if (ResizeRelocationProbe::destructor_calls != 4) {
+            return false;
+        }
+    }
+
+    if (ResizeRelocationProbe::live_count != 0) {
+        return false;
+    }
+
+    /*
+     * Four rollback destructions
+     * +
+     * two original elements when v dies.
+     */
+    if (ResizeRelocationProbe::destructor_calls != 6) {
+        return false;
+    }
+
+    return true;
+}
+
+
 int main() {
     std::cout
             << "copy constructor: "
@@ -1754,6 +2373,55 @@ int main() {
     std::cout
             << "pop_back destroys element: "
             << (test_pop_back_destroys_element()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize shrink: "
+            << (test_resize_shrink()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize shrink destroys elements: "
+            << (test_resize_shrink_destroys_elements()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize grow within capacity: "
+            << (test_resize_grow_within_capacity()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize grow within capacity exception safety: "
+            << (test_resize_grow_within_capacity_exception_safety()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize grow with reallocation: "
+            << (test_resize_grow_with_reallocation()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize reallocation default exception safety: "
+            << (test_resize_reallocation_default_exception_safety()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize reallocation relocation exception safety: "
+            << (test_resize_reallocation_relocation_exception_safety()
                     ? "PASS"
                     : "FAIL")
             << '\n';

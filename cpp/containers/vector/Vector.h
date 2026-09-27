@@ -286,6 +286,155 @@ public:
     }
 
 
+    void resize(const std::size_t new_size) {
+        if (new_size < size_) {
+            for (std::size_t i = size_; i > new_size; --i) {
+                std::destroy_at(
+                    data_ + (i - 1)
+                );
+            }
+
+            size_ = new_size;
+            return;
+        }
+
+        if (new_size == size_) {
+            return;
+        }
+
+        if (new_size > capacity_) {
+            const std::size_t max_capacity =
+                    AllocatorTraits::max_size(allocator_);
+
+            if (new_size > max_capacity) {
+                throw std::length_error{
+                    "Vector::resize exceeds max_size"
+                };
+            }
+
+            /*
+             * For now, allocate exactly what resize() needs.
+             * We can revisit geometric growth policy separately.
+             */
+            T *new_elements =
+                    AllocatorTraits::allocate(
+                        allocator_,
+                        new_size
+                    );
+
+            std::size_t default_constructed = 0;
+            std::size_t relocated = 0;
+
+            try {
+                /*
+                 * Construct the new tail first.
+                 *
+                 * If default construction throws, the old
+                 * Vector has not been touched at all.
+                 */
+                for (
+                    ;
+                    default_constructed < new_size - size_;
+                    ++default_constructed
+                ) {
+                    std::construct_at(
+                        new_elements
+                        + size_
+                        + default_constructed
+                    );
+                }
+
+                /*
+                 * Only after the new elements exist do we
+                 * relocate the original elements.
+                 */
+                for (; relocated < size_; ++relocated) {
+                    std::construct_at(
+                        new_elements + relocated,
+                        std::move_if_noexcept(
+                            data_[relocated]
+                        )
+                    );
+                }
+            } catch (...) {
+                /*
+                 * Destroy successfully relocated prefix.
+                 */
+                while (relocated > 0) {
+                    --relocated;
+
+                    std::destroy_at(
+                        new_elements + relocated
+                    );
+                }
+
+                /*
+                 * Destroy successfully default-constructed tail.
+                 */
+                while (default_constructed > 0) {
+                    --default_constructed;
+
+                    std::destroy_at(
+                        new_elements
+                        + size_
+                        + default_constructed
+                    );
+                }
+
+                AllocatorTraits::deallocate(
+                    allocator_,
+                    new_elements,
+                    new_size
+                );
+
+                throw;
+            }
+
+            /*
+             * Everything in the replacement allocation now
+             * exists successfully. Commit the transaction.
+             */
+            destroy_old_elements();
+
+            if (data_ != nullptr) {
+                AllocatorTraits::deallocate(
+                    allocator_,
+                    data_,
+                    capacity_
+                );
+            }
+
+            data_ = new_elements;
+            size_ = new_size;
+            capacity_ = new_size;
+
+            return;
+        }
+
+        std::size_t constructed = size_;
+
+        try {
+            for (; constructed < new_size; ++constructed) {
+                std::construct_at(
+                    data_ + constructed
+                );
+            }
+        } catch (...) {
+            while (constructed > size_) {
+                --constructed;
+
+                std::destroy_at(
+                    data_ + constructed
+                );
+            }
+
+            throw;
+        }
+
+        size_ = new_size;
+    }
+
+
     void push_back(const T &value) {
         emplace_back(value);
     }
