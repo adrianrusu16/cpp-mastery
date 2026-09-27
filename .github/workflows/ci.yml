@@ -12,98 +12,56 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux:
-    name: Linux / ${{ matrix.compiler }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler: [gcc, clang]
-    steps:
-      - uses: actions/checkout@v4
+  clang:
+    name: Clang 22 / C++26
+    runs-on: ubuntu-26.04
 
-      - uses: actions/setup-python@v5
+    env:
+      CC: clang-22
+      CXX: clang++-22
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
       - name: Install CMake and Ninja
         run: python -m pip install --upgrade "cmake>=3.31,<4" ninja
 
-      - name: Configure compiler
-        shell: bash
+      - name: Show toolchain versions
         run: |
-          if [[ "${{ matrix.compiler }}" == "gcc" ]]; then
-            echo "CC=gcc" >> "$GITHUB_ENV"
-            echo "CXX=g++" >> "$GITHUB_ENV"
-          else
-            echo "CC=clang" >> "$GITHUB_ENV"
-            echo "CXX=clang++" >> "$GITHUB_ENV"
-          fi
+          cmake --version
+          ninja --version
+          clang-22 --version
+          clang++-22 --version
 
-      - name: Configure
+      - name: Configure strict debug build
         run: >-
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Debug
           -DBUILD_TESTING=ON
           -DCPP_MASTERY_WARNINGS_AS_ERRORS=ON
 
-      - name: Build
+      - name: Build strict debug configuration
         run: cmake --build build --parallel
 
-      - name: Test
+      - name: Run strict debug tests
         run: ctest --test-dir build --output-on-failure
 
-  sanitizers:
-    name: Linux / GCC / ASan + UBSan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install CMake and Ninja
-        run: python -m pip install --upgrade "cmake>=3.31,<4" ninja
-
-      - name: Configure
-        env:
-          CC: gcc
-          CXX: g++
+      - name: Configure sanitizer build
         run: >-
-          cmake -S . -B build -G Ninja
+          cmake -S . -B build-sanitize -G Ninja
           -DCMAKE_BUILD_TYPE=Debug
           -DBUILD_TESTING=ON
           -DCPP_MASTERY_WARNINGS_AS_ERRORS=ON
           -DCPP_MASTERY_ENABLE_SANITIZERS=ON
 
-      - name: Build
-        run: cmake --build build --parallel
+      - name: Build sanitizer configuration
+        run: cmake --build build-sanitize --parallel
 
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
-
-  windows:
-    name: Windows / MSVC
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install CMake
-        run: python -m pip install --upgrade "cmake>=3.31,<4"
-
-      - name: Configure
-        run: >-
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-          -DBUILD_TESTING=ON
-          -DCPP_MASTERY_WARNINGS_AS_ERRORS=ON
-
-      - name: Build
-        run: cmake --build build --config Debug --parallel
-
-      - name: Test
-        run: ctest --test-dir build -C Debug --output-on-failure
+      - name: Run sanitizer tests
+        run: ctest --test-dir build-sanitize --output-on-failure

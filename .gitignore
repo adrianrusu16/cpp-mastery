@@ -7,12 +7,13 @@ cmake-build-*/
 out/
 
 # CMake generated files
+/build/
+/cmake-build-*/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 compile_commands.json
 CTestTestfile.cmake
-Testing/
 
 # Native build artifacts
 *.exe
