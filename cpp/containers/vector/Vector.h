@@ -435,6 +435,133 @@ public:
     }
 
 
+    void resize(
+        const std::size_t new_size,
+        const T &value
+    ) {
+        if (new_size <= size_) {
+            resize(new_size);
+            return;
+        }
+
+        if (new_size > capacity_) {
+            const std::size_t max_capacity =
+                    AllocatorTraits::max_size(allocator_);
+
+            if (new_size > max_capacity) {
+                throw std::length_error{
+                    "Vector::resize exceeds max_size"
+                };
+            }
+
+            T *new_elements =
+                    AllocatorTraits::allocate(
+                        allocator_,
+                        new_size
+                    );
+
+            std::size_t filled = 0;
+            std::size_t relocated = 0;
+
+            try {
+                /*
+                 * Construct the new tail FIRST.
+                 *
+                 * This is important because value may alias
+                 * an existing element, for example:
+                 *
+                 *     v.resize(10, v[0]);
+                 *
+                 * As long as the old allocation is untouched,
+                 * value remains valid.
+                 */
+                for (; filled < new_size - size_; ++filled) {
+                    std::construct_at(
+                        new_elements + size_ + filled,
+                        value
+                    );
+                }
+
+                /*
+                 * Only after all fill elements exist do we
+                 * relocate the old elements.
+                 */
+                for (; relocated < size_; ++relocated) {
+                    std::construct_at(
+                        new_elements + relocated,
+                        std::move_if_noexcept(
+                            data_[relocated]
+                        )
+                    );
+                }
+            } catch (...) {
+                while (relocated > 0) {
+                    --relocated;
+
+                    std::destroy_at(
+                        new_elements + relocated
+                    );
+                }
+
+                while (filled > 0) {
+                    --filled;
+
+                    std::destroy_at(
+                        new_elements + size_ + filled
+                    );
+                }
+
+                AllocatorTraits::deallocate(
+                    allocator_,
+                    new_elements,
+                    new_size
+                );
+
+                throw;
+            }
+
+            destroy_old_elements();
+
+            if (data_ != nullptr) {
+                AllocatorTraits::deallocate(
+                    allocator_,
+                    data_,
+                    capacity_
+                );
+            }
+
+            data_ = new_elements;
+            size_ = new_size;
+            capacity_ = new_size;
+
+            return;
+        }
+
+        std::size_t constructed = size_;
+
+        try {
+            for (; constructed < new_size; ++constructed) {
+                std::construct_at(
+                    data_ + constructed,
+                    value
+                );
+            }
+        } catch (...) {
+            while (constructed > size_) {
+                --constructed;
+
+                std::destroy_at(
+                    data_ + constructed
+                );
+            }
+
+            throw;
+        }
+
+        size_ = new_size;
+    }
+
+
     void push_back(const T &value) {
         emplace_back(value);
     }

@@ -202,6 +202,52 @@ struct ResizeRelocationProbe {
 };
 
 
+struct ResizeFillProbe {
+    static inline int live_count = 0;
+    static inline int destructor_calls = 0;
+    static inline int copies = 0;
+    static inline int copies_before_throw = -1;
+
+    int value = 0;
+
+    ResizeFillProbe() {
+        ++live_count;
+    }
+
+    explicit ResizeFillProbe(const int value)
+        : value{value} {
+        ++live_count;
+    }
+
+    ResizeFillProbe(const ResizeFillProbe &other)
+        : value{other.value} {
+        if (copies_before_throw == 0) {
+            throw std::runtime_error{
+                "intentional fill copy failure"
+            };
+        }
+
+        if (copies_before_throw > 0) {
+            --copies_before_throw;
+        }
+
+        ++copies;
+        ++live_count;
+    }
+
+    ResizeFillProbe(ResizeFillProbe &&other) noexcept
+        : value{other.value} {
+        other.value = -1;
+        ++live_count;
+    }
+
+    ~ResizeFillProbe() {
+        --live_count;
+        ++destructor_calls;
+    }
+};
+
+
 template<typename T>
 void print_addresses(
     const Vector<T> &vector,
@@ -2166,6 +2212,357 @@ bool test_resize_reallocation_relocation_exception_safety() {
 }
 
 
+bool test_resize_fill_grow_within_capacity() {
+    Vector<int> v;
+
+    v.reserve(8);
+
+    v.push_back(10);
+    v.push_back(20);
+
+    int *const old_data = v.data();
+    const std::size_t old_capacity =
+            v.capacity();
+
+    v.resize(5, 99);
+
+    if (v.size() != 5) {
+        return false;
+    }
+
+    if (v.capacity() != old_capacity) {
+        return false;
+    }
+
+    if (v.data() != old_data) {
+        return false;
+    }
+
+    if (v[0] != 10
+        || v[1] != 20) {
+        return false;
+    }
+
+    if (v[2] != 99
+        || v[3] != 99
+        || v[4] != 99) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_resize_fill_alias_within_capacity() {
+    Vector<std::string> v;
+
+    v.reserve(8);
+
+    v.push_back("zero");
+    v.push_back("one");
+
+    v.resize(5, v[0]);
+
+    if (v.size() != 5) {
+        return false;
+    }
+
+    return v[0] == "zero"
+           && v[1] == "one"
+           && v[2] == "zero"
+           && v[3] == "zero"
+           && v[4] == "zero";
+}
+
+
+bool test_resize_fill_grow_with_reallocation() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+
+    std::string *const old_data = v.data();
+
+    v.resize(10, std::string{"fill"});
+
+    if (v.size() != 10) {
+        return false;
+    }
+
+    if (v.capacity() < 10) {
+        return false;
+    }
+
+    if (v.data() == old_data) {
+        return false;
+    }
+
+    if (v[0] != "zero"
+        || v[1] != "one") {
+        return false;
+    }
+
+    for (std::size_t i = 2; i < 10; ++i) {
+        if (v[i] != "fill") {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+bool test_resize_fill_alias_with_reallocation() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+
+    std::string *const old_data = v.data();
+
+    /*
+     * value aliases an element in the allocation
+     * that resize() is about to replace.
+     */
+    v.resize(10, v[0]);
+
+    if (v.size() != 10) {
+        return false;
+    }
+
+    if (v.capacity() < 10) {
+        return false;
+    }
+
+    if (v.data() == old_data) {
+        return false;
+    }
+
+    if (v[0] != "zero"
+        || v[1] != "one") {
+        return false;
+    }
+
+    for (std::size_t i = 2; i < 10; ++i) {
+        if (v[i] != "zero") {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+bool test_resize_fill_reallocation_exception_safety() {
+    ResizeFillProbe::live_count = 0;
+    ResizeFillProbe::destructor_calls = 0;
+    ResizeFillProbe::copies = 0;
+    ResizeFillProbe::copies_before_throw = -1;
+
+    {
+        Vector<ResizeFillProbe> v;
+
+        v.reserve(2);
+
+        v.emplace_back(10);
+        v.emplace_back(20);
+
+        ResizeFillProbe fill{99};
+
+        ResizeFillProbe *const old_data =
+                v.data();
+
+        const std::size_t old_capacity =
+                v.capacity();
+
+        /*
+         * resize(5, fill) needs three fill copies.
+         *
+         * copy #1 succeeds
+         * copy #2 throws
+         */
+        ResizeFillProbe::copies_before_throw = 1;
+
+        bool exception_caught = false;
+
+        try {
+            v.resize(5, fill);
+        } catch (const std::runtime_error &) {
+            exception_caught = true;
+        }
+
+        if (!exception_caught) {
+            return false;
+        }
+
+        /*
+         * Original Vector must remain unchanged.
+         */
+        if (v.size() != 2) {
+            return false;
+        }
+
+        if (v.capacity() != old_capacity) {
+            return false;
+        }
+
+        if (v.data() != old_data) {
+            return false;
+        }
+
+        if (v[0].value != 10
+            || v[1].value != 20) {
+            return false;
+        }
+
+        /*
+         * Two original elements + external fill object.
+         */
+        if (ResizeFillProbe::live_count != 3) {
+            return false;
+        }
+
+        /*
+         * Exactly one successful new fill object
+         * must have been destroyed during rollback.
+         */
+        if (ResizeFillProbe::destructor_calls != 1) {
+            return false;
+        }
+    }
+
+    /*
+     * v's two elements + fill must all be destroyed.
+     */
+    if (ResizeFillProbe::live_count != 0) {
+        return false;
+    }
+
+    /*
+     * 1 rollback destruction
+     * +
+     * 3 scope-exit destructions
+     */
+    if (ResizeFillProbe::destructor_calls != 4) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_resize_fill_relocation_exception_safety() {
+    ResizeRelocationProbe::live_count = 0;
+    ResizeRelocationProbe::destructor_calls = 0;
+    ResizeRelocationProbe::copies = 0;
+    ResizeRelocationProbe::moves = 0;
+    ResizeRelocationProbe::copies_before_throw = -1;
+
+    {
+        Vector<ResizeRelocationProbe> v;
+
+        v.reserve(2);
+
+        v.emplace_back(10);
+        v.emplace_back(20);
+
+        ResizeRelocationProbe fill{99};
+
+        ResizeRelocationProbe *const old_data =
+                v.data();
+
+        const std::size_t old_capacity =
+                v.capacity();
+
+        /*
+         * resize(5, fill):
+         *
+         * 3 fill copies succeed
+         * relocation copy of old[0] succeeds
+         * relocation copy of old[1] throws
+         */
+        ResizeRelocationProbe::copies_before_throw = 4;
+
+        bool exception_caught = false;
+
+        try {
+            v.resize(5, fill);
+        } catch (const std::runtime_error &) {
+            exception_caught = true;
+        }
+
+        if (!exception_caught) {
+            return false;
+        }
+
+        if (v.size() != 2) {
+            return false;
+        }
+
+        if (v.capacity() != old_capacity) {
+            return false;
+        }
+
+        if (v.data() != old_data) {
+            return false;
+        }
+
+        if (v[0].value != 10
+            || v[1].value != 20) {
+            return false;
+        }
+
+        /*
+         * 3 fill copies
+         * +
+         * 1 successful relocation copy
+         */
+        if (ResizeRelocationProbe::copies != 4) {
+            return false;
+        }
+
+        if (ResizeRelocationProbe::moves != 0) {
+            return false;
+        }
+
+        /*
+         * Original elements + external fill object.
+         */
+        if (ResizeRelocationProbe::live_count != 3) {
+            return false;
+        }
+
+        /*
+         * Rollback destroys:
+         *
+         * 1 relocated element
+         * +
+         * 3 fill elements
+         */
+        if (ResizeRelocationProbe::destructor_calls != 4) {
+            return false;
+        }
+    }
+
+    if (ResizeRelocationProbe::live_count != 0) {
+        return false;
+    }
+
+    /*
+     * 4 rollback destructions
+     * +
+     * 2 original vector elements
+     * +
+     * external fill object
+     */
+    if (ResizeRelocationProbe::destructor_calls != 7) {
+        return false;
+    }
+
+    return true;
+}
+
+
 int main() {
     std::cout
             << "copy constructor: "
@@ -2422,6 +2819,48 @@ int main() {
     std::cout
             << "resize reallocation relocation exception safety: "
             << (test_resize_reallocation_relocation_exception_safety()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize fill grow within capacity: "
+            << (test_resize_fill_grow_within_capacity()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize fill alias within capacity: "
+            << (test_resize_fill_alias_within_capacity()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize fill grow with reallocation: "
+            << (test_resize_fill_grow_with_reallocation()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize fill alias with reallocation: "
+            << (test_resize_fill_alias_with_reallocation()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize fill reallocation exception safety: "
+            << (test_resize_fill_reallocation_exception_safety()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "resize fill relocation exception safety: "
+            << (test_resize_fill_relocation_exception_safety()
                     ? "PASS"
                     : "FAIL")
             << '\n';
