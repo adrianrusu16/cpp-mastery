@@ -1,0 +1,2 @@
+add_executable(concepts_lab main.cpp)
+cpp_mastery_configure_target(concepts_lab)

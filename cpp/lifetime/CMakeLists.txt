@@ -1,0 +1,2 @@
+add_executable(lifetime_lab main.cpp)
+cpp_mastery_configure_target(lifetime_lab)

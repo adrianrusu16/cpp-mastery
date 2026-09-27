@@ -1,0 +1,2 @@
+add_executable(template_deduction_lab main.cpp)
+cpp_mastery_configure_target(template_deduction_lab)

@@ -5,8 +5,8 @@
 struct Tracer {
     int id;
 
-    explicit Tracer(const int id)
-        : id{id}
+    explicit Tracer(const int initial_id)
+        : id{initial_id}
     {
         std::cout << "construct        " << id << '\n';
     }

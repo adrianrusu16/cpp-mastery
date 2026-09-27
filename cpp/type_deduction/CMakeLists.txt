@@ -1,0 +1,2 @@
+add_executable(type_deduction_lab main.cpp)
+cpp_mastery_configure_target(type_deduction_lab)

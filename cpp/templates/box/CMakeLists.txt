@@ -1,0 +1,2 @@
+add_executable(class_template_box_lab main.cpp)
+cpp_mastery_configure_target(class_template_box_lab)

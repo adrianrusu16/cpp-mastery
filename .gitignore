@@ -1,26 +1,36 @@
-# CLion / JetBrains
+# JetBrains / CLion
 .idea/
 
-# CMake build directories
-cmake-build-*/
+# CMake build trees
 build/
+cmake-build-*/
+out/
 
 # CMake generated files
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 compile_commands.json
+CTestTestfile.cmake
+Testing/
 
-# Binaries
+# Native build artifacts
 *.exe
 *.dll
 *.so
 *.dylib
 *.a
 *.lib
+*.o
+*.obj
+*.pdb
 
-# Debug / sanitizer output
+# Sanitizer / coverage output
 *.log
+*.profraw
+*.gcda
+*.gcno
+coverage/
 
 # OS
 .DS_Store

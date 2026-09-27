@@ -155,16 +155,16 @@ int main()
     good_forward(Payload{});
 
     std::cout << "\nBAD lvalue\n";
-    auto a = make_holder_bad(p);
+    [[maybe_unused]] auto a = make_holder_bad(p);
 
     std::cout << "\nBAD rvalue\n";
-    auto b = make_holder_bad(Payload{});
+    [[maybe_unused]] auto b = make_holder_bad(Payload{});
 
     std::cout << "\nGOOD lvalue\n";
-    auto c = make_holder_good(p);
+    [[maybe_unused]] auto c = make_holder_good(p);
 
     std::cout << "\nGOOD rvalue\n";
-    auto d = make_holder_good(Payload{});
+    [[maybe_unused]] auto d = make_holder_good(Payload{});
 
     return 0;
 }

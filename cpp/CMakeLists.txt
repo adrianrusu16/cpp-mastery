@@ -1,0 +1,6 @@
+add_subdirectory(lifetime)
+add_subdirectory(raii)
+add_subdirectory(value_categories)
+add_subdirectory(type_deduction)
+add_subdirectory(templates)
+add_subdirectory(containers)

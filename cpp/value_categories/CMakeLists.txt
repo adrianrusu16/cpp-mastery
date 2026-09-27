@@ -1,0 +1,2 @@
+add_executable(value_categories_lab main.cpp)
+cpp_mastery_configure_target(value_categories_lab)

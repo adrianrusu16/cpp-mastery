@@ -1,281 +1,179 @@
 <div align="center">
 
-# 🧱 C++ Mastery
+# C++ Mastery
 
-### Modern C++ systems learning lab — lifetime, ownership, allocators and generic programming.
+### Hands-on C and modern C++ systems labs focused on lifetime, ownership, generic programming, containers, and toolchain behavior.
 
 ![C++26](https://img.shields.io/badge/C%2B%2B-26-00599C?style=flat-square&logo=cplusplus&logoColor=white)
 ![C17](https://img.shields.io/badge/C-17-A8B9CC?style=flat-square&logo=c&logoColor=white)
 ![CMake](https://img.shields.io/badge/CMake-3.31+-064F8C?style=flat-square&logo=cmake&logoColor=white)
-![Sanitizers](https://img.shields.io/badge/ASan_%C2%B7_UBSan-selected_labs-555?style=flat-square)
+![CTest](https://img.shields.io/badge/tests-CTest-555?style=flat-square)
+![Sanitizers](https://img.shields.io/badge/ASan%20%2B%20UBSan-supported-555?style=flat-square)
 
 [Case study](https://adrianrusu.dev/projects/cpp-mastery/) ·
 [Vector lab](cpp/containers/vector/) ·
-[Lifetime lab](cpp/lifetime/) ·
+[C vector lab](c/vvector/) ·
 [RAII lab](cpp/raii/)
 
 </div>
 
 ---
 
-**C++ Mastery** is a hands-on C and modern C++ repository for building a deeper understanding of how objects, storage and generic code actually behave.
-
-It is intentionally a **learning lab**, not an attempt to replace the C++ standard library.
+**C++ Mastery** is a learning repository for making low-level C/C++ behavior observable instead of treating it as trivia. The labs move from raw storage and C-style generic containers through object lifetime, RAII, value categories, templates, concepts, ranges, allocators, and exception-safe container design.
 
 > Build the abstraction. Trace the lifetime. Break the assumption. Verify the behavior.
 
----
+The repository is intentionally educational; the custom containers are not replacements for the standard library.
 
-## 🧭 What is explored
+## Highlights
 
-| Area | Examples in the repository |
+| Area | What is exercised |
 |---|---|
-| 🧬 **Object lifetime** | construction/destruction tracing, copy/move behavior, scope and reallocation |
-| 🧰 **RAII** | ownership wrappers and deterministic cleanup |
-| ↔️ **Value categories** | lvalues/rvalues, move semantics and `std::forward` |
-| 🧠 **Type deduction** | deduction rules and generic call behavior |
-| 🧩 **Templates** | class templates, parameter packs, concepts and fold expressions |
-| 📦 **Containers** | a custom allocator-backed `Vector<T>` |
-| 💥 **Exception safety** | partial-construction cleanup and strong-guarantee experiments |
-| 🧱 **Layout/alignment** | `alignas(64)` and address/layout experiments |
-| 🔬 **Sanitizers** | ASan/UBSan enabled on selected C/C++ labs |
-| 🛠️ **Build system** | CMake with C17 and C++26 targets |
+| Object lifetime | construction, destruction, copy/move behavior, raw storage vs live objects |
+| Ownership / RAII | deterministic cleanup, Rule of Zero, moved-from states |
+| Value categories | lvalues, rvalues, forwarding references, `std::move`, `std::forward` |
+| Templates | deduction, class templates, concepts, variadic packs, fold expressions |
+| Containers | C `vvector` and allocator-backed `Vector<T>` |
+| Exception safety | partial-construction rollback and strong-guarantee experiments |
+| Memory layout | contiguous storage, alignment, address/offset observations |
+| Ranges | `Vector<T>` satisfies sized, common, random-access, contiguous range concepts |
+| Tooling | custom `cpp_mastery::test` framework, CMake presets, CTest, strict warnings, ASan/UBSan, GitHub Actions CI |
 
----
-
-## ⭐ The `Vector<T>` lab
-
-The most substantial container exercise is:
-
-```text
-cpp/containers/vector/Vector.h
-```
-
-It deliberately works below the abstraction level of `std::vector` to practice the mechanics behind a container.
-
-Current implementation includes:
-
-- `std::allocator<T>` / `std::allocator_traits`;
-- explicit allocation/deallocation;
-- `std::construct_at` / `std::destroy_at`;
-- copy construction with partial-construction cleanup;
-- copy assignment through copy-and-swap;
-- O(1)-style ownership transfer in move construction/assignment;
-- `reserve`;
-- `push_back`;
-- variadic `emplace_back`;
-- `std::move_if_noexcept` during relocation;
-- bounds-checked `at`;
-- overflow-aware geometric capacity growth.
-
-### Alias-sensitive growth
-
-When a new element aliases storage already owned by the vector, growth order matters.
-
-The implementation constructs the **new element first**, before relocating the old allocation:
-
-```text
-old vector allocation
-       │
-       ├── argument may alias v[i]
-       │
-       ↓
-allocate new storage
-       ↓
-construct appended element
-       ↓
-relocate old elements
-       ↓
-destroy old allocation
-```
-
-That ordering is exercised by self-copy/self-move reallocation cases in the lab.
-
----
-
-## 💥 Exception-safety experiments
-
-The vector lab includes a `ThrowOnCopy` probe that can fail during copy construction.
-
-The tests/checks verify properties such as:
-
-- partially constructed objects are destroyed;
-- no extra live objects leak from the failed copy;
-- the source remains unchanged;
-- failed copy assignment leaves the destination unchanged.
-
-This makes exception safety observable rather than only theoretical.
-
----
-
-## 🧠 Value categories & forwarding
-
-The value-category lab contrasts forwarding code such as:
-
-```cpp
-consume(value);
-```
-
-with:
-
-```cpp
-consume(std::forward<T>(value));
-```
-
-and uses overloads / payload construction to make the consequences visible.
-
-The goal is not to memorize reference-collapsing tables in isolation, but to observe which overload and construction path actually occurs.
-
----
-
-## 🧩 Concepts and folds
-
-The template labs include:
-
-- custom concepts with `requires`;
-- standard concepts such as `std::integral`;
-- constrained function templates;
-- variadic parameter packs;
-- left/right fold expressions.
-
-These are small, isolated experiments designed to make language behavior inspectable.
-
----
-
-## 🧱 Layout & alignment
-
-The container lab includes an explicitly aligned type:
-
-```cpp
-struct alignas(64) CacheLineData {
-    int values[16]{};
-};
-```
-
-and prints object addresses / offsets to make alignment and contiguous layout concrete.
-
-This is an experiment in object layout — not a performance benchmark claim.
-
----
-
-## 🗂️ Repository map
+## Repository map
 
 ```text
 cpp-mastery/
+├── .github/workflows/ci.yml
+├── cmake/                         shared warning/sanitizer options
+├── support/                       dependency-free test framework and C test support
 ├── c/
-│   └── vvector/               C dynamic-vector exercise
+│   └── vvector/                   generic C dynamic vector + tests
 ├── cpp/
-│   ├── containers/
-│   │   └── vector/            allocator-backed Vector<T>
-│   ├── lifetime/              construction/copy/move/destruction tracing
-│   ├── raii/                  RAII exercises
-│   ├── templates/
-│   │   ├── box/
-│   │   ├── concepts/
-│   │   ├── deduction/
-│   │   └── folds/
-│   ├── type_deduction/
-│   ├── value_categories/
-│   └── exams/                 older/exam-oriented exercises
+│   ├── containers/vector/         allocator-backed Vector<T>
+│   ├── lifetime/                  object-lifetime tracing
+│   ├── raii/                      Rule-of-Zero IntBuffer + tests
+│   ├── value_categories/          lvalue/rvalue and forwarding experiments
+│   ├── type_deduction/            auto / decltype behavior
+│   └── templates/
+│       ├── deduction/
+│       ├── box/
+│       ├── concepts/
+│       └── folds/
+├── archive/academic_exercises/    older coursework, excluded from default CI
 ├── CMakeLists.txt
-└── main.cpp
+└── CMakePresets.json
 ```
 
----
+Each active lab has its own `README.md` and `CMakeLists.txt`, so the repository can be browsed as a set of focused case studies instead of one monolithic executable.
 
-## 🚀 Build
+## Vector lab
 
-Requirements are driven by the root CMake configuration:
+The most substantial exercise is the custom allocator-backed `Vector<T>`:
 
 ```text
-CMake 3.31+
-C17-capable compiler
-C++26-capable compiler for the enabled C++ targets
+cpp/containers/vector/
+├── include/cpp_mastery/vector/
+│   ├── Vector.hpp                 public template interface
+│   └── Vector.tpp                 template implementation
+├── examples/vector_demo.cpp
+└── tests/                         feature-focused test translation units
 ```
 
-Typical configure/build:
+The implementation covers:
+
+- `std::allocator<T>` / `std::allocator_traits`;
+- explicit allocation and deallocation;
+- `std::construct_at` / `std::destroy_at`;
+- Rule of Five behavior;
+- `reserve`, `push_back`, `emplace_back`, `pop_back`;
+- both `resize` overloads;
+- alias-sensitive growth such as `v.push_back(v[0])` and `v.resize(10, v[0])`;
+- `std::move_if_noexcept` relocation;
+- checked and unchecked element access;
+- pointer iterators and standard ranges integration;
+- exception rollback for failed copy/default/fill construction.
+
+The `.tpp` is included by `Vector.hpp`; it is not a separately compiled source file. This keeps the public declaration readable while preserving the template-definition visibility required at instantiation sites.
+
+See [the vector lab README](cpp/containers/vector/README.md) for the design and exception-safety notes.
+
+## Tests
+
+The C++ labs use a small dependency-free framework implemented in this repository: [`cpp_mastery::test`](support/cpp/README.md). It provides explicit `TestSuite` composition, `CHECK`/`REQUIRE` assertions, exception assertions, `std::source_location` diagnostics, CLI filtering, timing, and a console reporter.
+
+The active test inventory is:
+
+```text
+vvector   10 C cases
+raii       8 C++ cases
+vector    43 C++ cases
+----------------------
+total     61 cases
+```
+
+CMake registers C++ suites separately with CTest, so CI failures identify the subsystem directly (`vector.copy`, `vector.resize`, `vector.resize-fill-exceptions`, and so on).
+
+The C++ runners can also be used directly:
 
 ```bash
-cmake -S . -B build
+./containers_vector_tests --list
+./containers_vector_tests --suite resize
+./containers_vector_tests --test alias --verbose
+```
+
+Run the complete repository with:
+
+```bash
+cmake --preset dev
+cmake --build --preset dev
+ctest --preset dev
+```
+
+Or with sanitizers on GCC/Clang:
+
+```bash
+cmake --preset sanitize
+cmake --build --preset sanitize
+ctest --preset sanitize
+```
+
+## Build without presets
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
+ctest --test-dir build --output-on-failure
 ```
 
-Because C++26 support differs between compiler versions, use a toolchain that supports the language features exercised by the current labs.
-
----
-
-## 🧪 Current executable labs
-
-The root `CMakeLists.txt` currently defines targets including:
+Useful project options:
 
 ```text
-cpp_mastery
-vvector_lab
-lifetime_lab
-exams
-raii_lab
-value_categories_lab
-template_deduction_lab
-class_template_box_lab
-concepts_lab
-folds_lab
-type_deduction_lab
-containers_vector_lab
+CPP_MASTERY_WARNINGS_AS_ERRORS=ON
+CPP_MASTERY_ENABLE_SANITIZERS=ON
+CPP_MASTERY_BUILD_ARCHIVE=ON
 ```
 
-Selected GNU/Clang targets enable strict warnings:
+The default active build uses C17 and C++26 with compiler extensions disabled.
+
+## CI
+
+`.github/workflows/ci.yml` builds and tests the active labs with:
+
+- GCC on Linux;
+- Clang on Linux;
+- GCC with AddressSanitizer + UndefinedBehaviorSanitizer;
+- MSVC on Windows.
+
+CI turns the repository warning set into errors. GNU/Clang builds use:
 
 ```text
--Wall
--Wextra
--Wpedantic
--Wconversion
--Wshadow
+-Wall -Wextra -Wpedantic -Wconversion -Wshadow
 ```
 
-`vvector_lab` and `raii_lab` currently also enable AddressSanitizer and UndefinedBehaviorSanitizer for GNU/Clang builds.
+MSVC uses `/W4 /permissive-`.
 
----
+## Why this repository exists
 
-## ⚙️ CI direction
+My day-to-day work is Android/AAOS. This project deliberately moves closer to the mechanics beneath application-level code: ownership, storage, object lifetime, ABI-adjacent reasoning, generic programming, data layout, exception guarantees, and compiler/toolchain behavior.
 
-The repository uses **CMake** as its canonical build system, so the relevant GitHub Actions starter is:
-
-> **CMake based, multi-platform projects**
-
-Not MSBuild, and not a separate Make-based workflow.
-
-The workflow should be adapted rather than accepted unchanged:
-
-```text
-Linux / GCC       required
-Linux / Clang     required
-Windows / MSVC    add once the current C++26 surface is clean
-macOS             informational/canary if AppleClang support lags
-```
-
-A useful next step is to register deterministic labs with CTest so CI can move from "build every target" to "build + execute the appropriate verification targets".
-
----
-
-## 🎯 Why this repository exists
-
-My day-to-day work is Android/AAOS. This repository is deliberately about moving closer to the language/runtime mechanics underneath higher-level application code:
-
-- ownership;
-- memory;
-- object lifetime;
-- exception guarantees;
-- generic programming;
-- data layout;
-- toolchain behavior.
-
-It is a place to make those concepts executable.
-
----
-
-<div align="center">
-
-[Explore the C++ Mastery case study →](https://adrianrusu.dev/projects/cpp-mastery/)
-
-</div>
+It is a place to turn those concepts into executable experiments and progressively production-quality code organization.

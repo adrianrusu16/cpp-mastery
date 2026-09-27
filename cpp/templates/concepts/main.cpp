@@ -38,11 +38,6 @@ T unconstrained_add(T a, T b)
 
 int main()
 {
-    Nothing a;
-    Nothing b;
-
-    unconstrained_add(a, b);
-
     std::cout << add(10, 20) << '\n';
 
     std::cout << add(
