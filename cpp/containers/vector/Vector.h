@@ -188,6 +188,32 @@ public:
         return data_;
     }
 
+    T *begin() noexcept {
+        return data_;
+    }
+
+    T *end() noexcept {
+        if (data_ == nullptr) {
+            return nullptr;
+        }
+
+        return data_ + size_;
+    }
+
+    const T* begin() const noexcept
+    {
+        return data_;
+    }
+
+    const T* end() const noexcept
+    {
+        if (data_ == nullptr) {
+            return nullptr;
+        }
+
+        return data_ + size_;
+    }
+
 
     void clear() noexcept {
         for (std::size_t i = size_; i > 0; --i) {

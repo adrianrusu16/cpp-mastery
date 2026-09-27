@@ -1237,6 +1237,111 @@ bool test_data_const() {
 }
 
 
+bool test_begin_end_mutable() {
+    Vector<int> v;
+
+    v.push_back(10);
+    v.push_back(20);
+    v.push_back(30);
+
+    int *first = v.begin();
+    int *last = v.end();
+
+    if (first != v.data()) {
+        return false;
+    }
+
+    if (last != v.data() + v.size()) {
+        return false;
+    }
+
+    if (last - first != 3) {
+        return false;
+    }
+
+    if (*first != 10) {
+        return false;
+    }
+
+    *(first + 1) = 99;
+
+    if (v[1] != 99) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_begin_end_empty() {
+    Vector<int> v;
+
+    if (v.begin() != nullptr) {
+        return false;
+    }
+
+    if (v.end() != nullptr) {
+        return false;
+    }
+
+    if (v.begin() != v.end()) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_begin_end_const() {
+    Vector<int> mutable_vector;
+
+    mutable_vector.push_back(10);
+    mutable_vector.push_back(20);
+    mutable_vector.push_back(30);
+
+    const Vector<int> &v =
+            mutable_vector;
+
+    const int *first = v.begin();
+    const int *last = v.end();
+
+    if (first != v.data()) {
+        return false;
+    }
+
+    if (last != v.data() + v.size()) {
+        return false;
+    }
+
+    if (last - first != 3) {
+        return false;
+    }
+
+    if (*first != 10) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_range_based_for() {
+    Vector<int> v;
+
+    v.push_back(10);
+    v.push_back(20);
+    v.push_back(30);
+
+    int sum = 0;
+
+    for (const int value: v) {
+        sum += value;
+    }
+
+    return sum == 60;
+}
+
+
 int main() {
     std::cout
             << "copy constructor: "
@@ -1381,6 +1486,34 @@ int main() {
     std::cout
             << "data const: "
             << (test_data_const()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "begin/end mutable: "
+            << (test_begin_end_mutable()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "begin/end empty: "
+            << (test_begin_end_empty()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "begin/end const: "
+            << (test_begin_end_const()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "range-based for: "
+            << (test_range_based_for()
                     ? "PASS"
                     : "FAIL")
             << '\n';
