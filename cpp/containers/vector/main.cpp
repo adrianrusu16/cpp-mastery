@@ -39,6 +39,34 @@ struct SmallData {
 };
 
 
+struct PopBackProbe {
+    static inline int live_count = 0;
+    static inline int destructor_calls = 0;
+
+    int value;
+
+    explicit PopBackProbe(const int value)
+        : value{value} {
+        ++live_count;
+    }
+
+    PopBackProbe(const PopBackProbe &other)
+        : value{other.value} {
+        ++live_count;
+    }
+
+    PopBackProbe(PopBackProbe &&other) noexcept
+        : value{other.value} {
+        ++live_count;
+    }
+
+    ~PopBackProbe() {
+        --live_count;
+        ++destructor_calls;
+    }
+};
+
+
 template<typename T>
 void print_addresses(
     const Vector<T> &vector,
@@ -1426,6 +1454,99 @@ bool test_ranges_interface() {
 }
 
 
+bool test_pop_back() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+    v.push_back("two");
+
+    const std::size_t old_capacity =
+            v.capacity();
+
+    v.pop_back();
+
+    if (v.size() != 2) {
+        return false;
+    }
+
+    if (v.capacity() != old_capacity) {
+        return false;
+    }
+
+    if (v[0] != "zero"
+        || v[1] != "one") {
+        return false;
+    }
+
+    if (v.back() != "one") {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_pop_back_destroys_element() {
+    PopBackProbe::live_count = 0;
+    PopBackProbe::destructor_calls = 0;
+
+    {
+        Vector<PopBackProbe> v;
+
+        /*
+         * Prevent growth during the test so relocation
+         * doesn't introduce additional destructor calls.
+         */
+        v.reserve(3);
+
+        v.emplace_back(10);
+        v.emplace_back(20);
+        v.emplace_back(30);
+
+        if (PopBackProbe::live_count != 3) {
+            return false;
+        }
+
+        if (PopBackProbe::destructor_calls != 0) {
+            return false;
+        }
+
+        v.pop_back();
+
+        if (v.size() != 2) {
+            return false;
+        }
+
+        if (PopBackProbe::live_count != 2) {
+            return false;
+        }
+
+        if (PopBackProbe::destructor_calls != 1) {
+            return false;
+        }
+
+        if (v.back().value != 20) {
+            return false;
+        }
+    }
+
+    /*
+     * The remaining two objects must be destroyed
+     * by Vector's destructor.
+     */
+    if (PopBackProbe::live_count != 0) {
+        return false;
+    }
+
+    if (PopBackProbe::destructor_calls != 3) {
+        return false;
+    }
+
+    return true;
+}
+
+
 int main() {
     std::cout
             << "copy constructor: "
@@ -1619,6 +1740,20 @@ int main() {
     std::cout
             << "ranges interface: "
             << (test_ranges_interface()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "pop_back: "
+            << (test_pop_back()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "pop_back destroys element: "
+            << (test_pop_back_destroys_element()
                     ? "PASS"
                     : "FAIL")
             << '\n';

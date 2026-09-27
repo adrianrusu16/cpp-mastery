@@ -200,13 +200,11 @@ public:
         return data_ + size_;
     }
 
-    const T* begin() const noexcept
-    {
+    const T *begin() const noexcept {
         return data_;
     }
 
-    const T* end() const noexcept
-    {
+    const T *end() const noexcept {
         if (data_ == nullptr) {
             return nullptr;
         }
@@ -324,6 +322,15 @@ public:
         }
 
         return data_[index];
+    }
+
+
+    void pop_back() noexcept {
+        std::destroy_at(
+            data_ + (size_ - 1)
+        );
+
+        --size_;
     }
 
 
