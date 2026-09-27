@@ -1,10 +1,32 @@
 #include "Vector.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <string>
 #include <utility>
 #include <stdexcept>
+#include <ranges>
+
+static_assert(
+    std::ranges::range<Vector<int> >
+);
+
+static_assert(
+    std::ranges::sized_range<Vector<int> >
+);
+
+static_assert(
+    std::ranges::common_range<Vector<int> >
+);
+
+static_assert(
+    std::ranges::random_access_range<Vector<int> >
+);
+
+static_assert(
+    std::ranges::contiguous_range<Vector<int> >
+);
 
 
 struct alignas(64) CacheLineData {
@@ -1342,6 +1364,68 @@ bool test_range_based_for() {
 }
 
 
+bool test_std_sort() {
+    Vector<int> v;
+
+    v.push_back(40);
+    v.push_back(10);
+    v.push_back(30);
+    v.push_back(20);
+
+    std::ranges::sort(v);
+
+    return v[0] == 10
+           && v[1] == 20
+           && v[2] == 30
+           && v[3] == 40;
+}
+
+
+bool test_const_range_based_for() {
+    Vector<int> mutable_vector;
+
+    mutable_vector.push_back(10);
+    mutable_vector.push_back(20);
+    mutable_vector.push_back(30);
+
+    const Vector<int> &v =
+            mutable_vector;
+
+    int sum = 0;
+
+    for (const int value: v) {
+        sum += value;
+    }
+
+    return sum == 60;
+}
+
+
+bool test_ranges_interface() {
+    Vector<int> v;
+
+    v.push_back(40);
+    v.push_back(10);
+    v.push_back(30);
+    v.push_back(20);
+
+    if (std::ranges::size(v) != 4) {
+        return false;
+    }
+
+    if (std::ranges::data(v) != v.data()) {
+        return false;
+    }
+
+    std::ranges::sort(v);
+
+    return v[0] == 10
+           && v[1] == 20
+           && v[2] == 30
+           && v[3] == 40;
+}
+
+
 int main() {
     std::cout
             << "copy constructor: "
@@ -1514,6 +1598,27 @@ int main() {
     std::cout
             << "range-based for: "
             << (test_range_based_for()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "std::sort: "
+            << (test_std_sort()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "const range-based for: "
+            << (test_const_range_based_for()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "ranges interface: "
+            << (test_ranges_interface()
                     ? "PASS"
                     : "FAIL")
             << '\n';
