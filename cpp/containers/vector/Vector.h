@@ -152,6 +152,24 @@ public:
     }
 
 
+    T &front() noexcept {
+        return data_[0];
+    }
+
+    const T &front() const noexcept {
+        return data_[0];
+    }
+
+
+    T &back() noexcept {
+        return data_[size_ - 1];
+    }
+
+    const T &back() const noexcept {
+        return data_[size_ - 1];
+    }
+
+
     T &operator[](const std::size_t index) noexcept {
         return data_[index];
     }
@@ -159,6 +177,15 @@ public:
 
     const T &operator[](const std::size_t index) const noexcept {
         return data_[index];
+    }
+
+
+    T *data() noexcept {
+        return data_;
+    }
+
+    const T *data() const noexcept {
+        return data_;
     }
 
 

@@ -1070,6 +1070,173 @@ bool test_at_const_access() {
 }
 
 
+bool test_front_mutable() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+    v.push_back("two");
+
+    std::string &first = v.front();
+
+    if (first != "zero") {
+        return false;
+    }
+
+    first = "changed";
+
+    if (v[0] != "changed") {
+        return false;
+    }
+
+    /*
+     * Prove this is literally the first stored object.
+     */
+    if (&first != &v[0]) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_front_const() {
+    Vector<std::string> mutable_vector;
+
+    mutable_vector.push_back("zero");
+    mutable_vector.push_back("one");
+    mutable_vector.push_back("two");
+
+    const Vector<std::string> &v =
+            mutable_vector;
+
+    const std::string &first =
+            v.front();
+
+    if (first != "zero") {
+        return false;
+    }
+
+    if (&first != &v[0]) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_back_mutable() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+    v.push_back("two");
+
+    std::string &last = v.back();
+
+    if (last != "two") {
+        return false;
+    }
+
+    last = "changed";
+
+    if (v[2] != "changed") {
+        return false;
+    }
+
+    if (&last != &v[2]) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_back_const() {
+    Vector<std::string> mutable_vector;
+
+    mutable_vector.push_back("zero");
+    mutable_vector.push_back("one");
+    mutable_vector.push_back("two");
+
+    const Vector<std::string> &v =
+            mutable_vector;
+
+    const std::string &last =
+            v.back();
+
+    if (last != "two") {
+        return false;
+    }
+
+    if (&last != &v[2]) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_data_mutable() {
+    Vector<std::string> v;
+
+    v.push_back("zero");
+    v.push_back("one");
+    v.push_back("two");
+
+    std::string *ptr = v.data();
+
+    if (ptr != &v[0]) {
+        return false;
+    }
+
+    if (ptr[0] != "zero"
+        || ptr[1] != "one"
+        || ptr[2] != "two") {
+        return false;
+    }
+
+    /*
+     * Prove that this is a mutable pointer
+     * into the actual contiguous storage.
+     */
+    ptr[1] = "changed";
+
+    if (v[1] != "changed") {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool test_data_const() {
+    Vector<std::string> mutable_vector;
+
+    mutable_vector.push_back("zero");
+    mutable_vector.push_back("one");
+    mutable_vector.push_back("two");
+
+    const Vector<std::string> &v =
+            mutable_vector;
+
+    const std::string *ptr =
+            v.data();
+
+    if (ptr != &v[0]) {
+        return false;
+    }
+
+    if (ptr[0] != "zero"
+        || ptr[1] != "one"
+        || ptr[2] != "two") {
+        return false;
+    }
+
+    return true;
+}
+
+
 int main() {
     std::cout
             << "copy constructor: "
@@ -1172,6 +1339,48 @@ int main() {
     std::cout
             << "at const access: "
             << (test_at_const_access()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "front mutable: "
+            << (test_front_mutable()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "front const: "
+            << (test_front_const()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "back mutable: "
+            << (test_back_mutable()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "back const: "
+            << (test_back_const()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "data mutable: "
+            << (test_data_mutable()
+                    ? "PASS"
+                    : "FAIL")
+            << '\n';
+
+    std::cout
+            << "data const: "
+            << (test_data_const()
                     ? "PASS"
                     : "FAIL")
             << '\n';
