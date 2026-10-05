@@ -25,6 +25,30 @@
 
 The repository is intentionally educational; the custom containers are not replacements for the standard library.
 
+## 🧭 Suggested learning path
+
+```mermaid
+flowchart LR
+    C["C raw storage"] --> Life["C++ object lifetime"]
+    Life --> RAII["RAII / ownership"]
+    RAII --> Values["Value categories"]
+    Values --> Templates["Templates / concepts"]
+    Templates --> Vector["Allocator-backed Vector<T>"]
+    Vector --> Safety["Exception safety + sanitizers"]
+```
+
+| If you want to inspect… | Start here |
+|---|---|
+| 🧠 **Object lifetime** | [`cpp/lifetime/`](cpp/lifetime/) |
+| 🧹 **RAII / ownership** | [RAII lab](cpp/raii/) |
+| ↔️ **Move/forwarding behavior** | [`cpp/value_categories/`](cpp/value_categories/) |
+| 🧩 **Templates and concepts** | [`cpp/templates/`](cpp/templates/) |
+| 📦 **Allocator-aware container design** | [Vector lab](cpp/containers/vector/) |
+| 🧪 **Test infrastructure** | [`cpp_mastery::test`](support/cpp/README.md) |
+| 🧭 **Guided project narrative** | [C++ Mastery case study](https://adrianrusu.dev/projects/cpp-mastery/) |
+
+---
+
 ## Highlights
 
 | Area | What is exercised |
