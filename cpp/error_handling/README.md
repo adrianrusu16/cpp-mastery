@@ -69,3 +69,44 @@ ctest --preset dev -R '^parsing\.zero-based-index$' --output-on-failure
 The RED stub deliberately always reports `empty_input`, so most new tests
 fail. GREEN propagates errors unchanged and transforms only successful values.
 There are now 14 project CTest entries, including two parsing suites.
+
+## Phase 2 / Lesson 3 — Error translation with preserved causes
+
+`cpp_mastery::config::read_worker_count(std::string_view)` consumes the strict
+positive integer parser from Lesson 1. The configuration domain requires a
+worker count in **[1, 64]**, with exactly the same ASCII-digit-only grammar.
+
+| Input | Result | Error origin |
+|---|---|---|
+| `"12"`, `"00064"` | `12`, `64` | success |
+| `""` | `ConfigError{field, ParseError::empty_input}` | parsing |
+| `"0"` | `ConfigError{field, ParseError::out_of_range}` | parsing |
+| `"12x"` | `ConfigError{field, ParseError::invalid_character}` | parsing |
+| `"65"` | `ConfigError{field, ConfigConstraintError::worker_count_above_maximum}` | domain |
+| `"99999999999999999999"` | `ConfigError{field, ParseError::out_of_range}` | parsing |
+
+The `ConfigError::cause` field is a `std::variant<ParseError, ConfigConstraintError>`.
+It holds **exactly one** of these alternatives; callers can use
+`std::get_if<ParseError>(&error.cause)` to inspect the original parsing cause,
+or `std::get_if<ConfigConstraintError>(&error.cause)` for a domain limit error.
+A variant avoids an inconsistent state such as a domain-limit error with a
+spurious parse cause.
+
+`ConfigError::field` is a non-owning `std::string_view` with a deliberate lifetime
+contract: this API always returns the view into the **string literal**
+`"worker_threads"`. The error never borrows the caller's potentially temporary
+input string; a caller can retain the error after discarding the input.
+
+The wrapper performs no dynamic allocation and is `noexcept`. Its first layer
+parses and classifies syntax/range errors; its second layer enforces the domain
+maximum. It never maps an otherwise valid but excessive worker count to
+`ParseError::out_of_range` because that would lose the cause's provenance.
+
+Run the additional CTest entry with:
+
+```sh
+ctest --preset dev -R '^config\.worker-count$' --output-on-failure
+```
+
+RED deliberately returns `empty_input` for all inputs; GREEN implements the
+composition. After Lesson 3, 15 project CTest entries should exist.
