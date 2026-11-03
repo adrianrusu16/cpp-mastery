@@ -37,6 +37,44 @@
         "BUILD_TESTING": "ON",
         "CPP_MASTERY_WARNINGS_AS_ERRORS": "ON"
       }
+    },
+    {
+      "name": "gcc16",
+      "displayName": "GCC 16 (Debug)",
+      "inherits": "dev",
+      "binaryDir": "${sourceDir}/build/gcc16",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "gcc16-sanitize",
+      "displayName": "GCC 16 (ASan/UBSan)",
+      "inherits": "gcc16",
+      "binaryDir": "${sourceDir}/build/gcc16-sanitize",
+      "cacheVariables": {
+        "CPP_MASTERY_ENABLE_SANITIZERS": "ON"
+      }
+    },
+    {
+      "name": "clang23",
+      "displayName": "Clang 23 (Debug)",
+      "inherits": "dev",
+      "binaryDir": "${sourceDir}/build/clang23",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "clang23-sanitize",
+      "displayName": "Clang 23 (ASan/UBSan)",
+      "inherits": "clang23",
+      "binaryDir": "${sourceDir}/build/clang23-sanitize",
+      "cacheVariables": {
+        "CPP_MASTERY_ENABLE_SANITIZERS": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -51,6 +89,22 @@
     {
       "name": "release",
       "configurePreset": "release"
+    },
+    {
+      "name": "gcc16",
+      "configurePreset": "gcc16"
+    },
+    {
+      "name": "gcc16-sanitize",
+      "configurePreset": "gcc16-sanitize"
+    },
+    {
+      "name": "clang23",
+      "configurePreset": "clang23"
+    },
+    {
+      "name": "clang23-sanitize",
+      "configurePreset": "clang23-sanitize"
     }
   ],
   "testPresets": [
@@ -71,6 +125,34 @@
     {
       "name": "release",
       "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc16",
+      "configurePreset": "gcc16",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc16-sanitize",
+      "configurePreset": "gcc16-sanitize",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang23",
+      "configurePreset": "clang23",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang23-sanitize",
+      "configurePreset": "clang23-sanitize",
       "output": {
         "outputOnFailure": true
       }

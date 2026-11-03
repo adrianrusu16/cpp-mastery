@@ -16,16 +16,10 @@ jobs:
     name: Clang-Format 22 / active C and C++
     runs-on: ubuntu-26.04
     steps:
-      # Both Checkout steps
       - name: Checkout
         uses: actions/checkout@v7
 
-      # Python setup step
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.x"
-
+      # Keep the formatter pinned until an explicit 22 -> 23 style migration.
       - name: Install Clang-Format 22
         run: |
           sudo apt-get update
@@ -34,22 +28,55 @@ jobs:
       - name: Verify formatting
         run: bash scripts/check-clang-format.sh clang-format-22
 
-  clang:
-    name: Clang 22 / C++26
+  compilers:
+    name: ${{ matrix.name }} / C++26
     runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: GCC 16
+            family: gcc
+            cc: gcc-16
+            cxx: g++-16
+          - name: Clang 23
+            family: clang
+            cc: clang-23
+            cxx: clang++-23
 
     env:
-      CC: clang-22
-      CXX: clang++-22
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.x"
+
+      - name: Install GCC 16
+        if: matrix.family == 'gcc'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-16 g++-16
+
+      # Ubuntu 26.04 does not ship the current stable Clang as its default.
+      # Use the LLVM project's signed version-specific apt repository.
+      - name: Install Clang 23
+        if: matrix.family == 'clang'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates curl gnupg
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | \
+            gpg --dearmor | \
+            sudo tee /usr/share/keyrings/llvm-archive-keyring.gpg >/dev/null
+          echo 'deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/resolute/ llvm-toolchain-resolute-23 main' | \
+            sudo tee /etc/apt/sources.list.d/llvm23.list
+          sudo apt-get update
+          sudo apt-get install -y clang-23 libclang-rt-23-dev
 
       - name: Install CMake and Ninja
         run: python -m pip install --upgrade "cmake>=3.31,<4" ninja
@@ -58,8 +85,8 @@ jobs:
         run: |
           cmake --version
           ninja --version
-          clang-22 --version
-          clang++-22 --version
+          "$CC" --version
+          "$CXX" --version
 
       - name: Configure strict debug build
         run: >-
