@@ -137,13 +137,22 @@ void check_throws_as(Callable&& callable, const std::string_view expression,
     {
         matched = true;
     }
-    catch (const std::exception& error)
-    {
-        mismatch = std::string{"threw a different std::exception: "} + error.what();
-    }
     catch (...)
     {
-        mismatch = "threw a different non-standard exception";
+        // The expected type may itself be std::exception. Classify only
+        // mismatches here, avoiding an unreachable shadowed catch handler.
+        try
+        {
+            throw;
+        }
+        catch (const std::exception& error)
+        {
+            mismatch = std::string{"threw a different std::exception: "} + error.what();
+        }
+        catch (...)
+        {
+            mismatch = "threw a different non-standard exception";
+        }
     }
 
     if (matched)
