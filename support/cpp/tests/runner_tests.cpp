@@ -136,7 +136,7 @@ void passing_filter_returns_zero(bootstrap::Checks& checks)
 
     checks.expect(run.exit_code == 0, "passing filtered test exits with 0");
     checks.expect(pass_calls == 1 && fail_calls == 0, "test filter only executes passes");
-    checks.expect(contains(run.output, "1 tests: 1 passed, 0 failed, 0 errors"),
+    checks.expect(contains(run.output, "1 test: 1 passed, 0 failed, 0 errors"),
                   "filtered summary counts only executed cases");
 }
 
@@ -272,7 +272,7 @@ void standard_exception_is_reported_as_error(bootstrap::Checks& checks)
     checks.expect(contains(run.output, "[ERROR] throws"), "standard exception is an error");
     checks.expect(contains(run.output, "unexpected exception: runner boom"),
                   "runner preserves exception diagnostic");
-    checks.expect(contains(run.output, "1 tests: 0 passed, 0 failed, 1 errors"),
+    checks.expect(contains(run.output, "1 test: 0 passed, 0 failed, 1 error"),
                   "runner tracks unexpected errors separately");
 }
 

@@ -5,6 +5,7 @@
 void run_assertion_tests(bootstrap::Checks& checks);
 void run_assertion_semantics_tests(bootstrap::Checks& checks);
 void run_runner_tests(bootstrap::Checks& checks);
+void run_reporter_tests(bootstrap::Checks& checks);
 
 int main()
 {
@@ -12,6 +13,7 @@ int main()
     run_assertion_tests(checks);
     run_assertion_semantics_tests(checks);
     run_runner_tests(checks);
+    run_reporter_tests(checks);
 
     std::cout << "\n"
               << checks.assertions() << " bootstrap assertions: " << checks.failures()

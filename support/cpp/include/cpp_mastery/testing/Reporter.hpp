@@ -75,8 +75,9 @@ class ConsoleReporter
     void run_finished(const RunSummary& summary) const
     {
         output_ << '\n'
-                << summary.total << " tests: " << summary.passed << " passed, " << summary.failed
-                << " failed, " << summary.errors << " errors";
+                << summary.total << (summary.total == 1 ? " test: " : " tests: ") << summary.passed
+                << " passed, " << summary.failed << " failed, " << summary.errors
+                << (summary.errors == 1 ? " error" : " errors");
 
         if (verbose_)
         {
