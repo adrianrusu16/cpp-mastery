@@ -174,3 +174,30 @@ GREEN moves that assignment into the non-throwing commit.
 
 Run `ctest --preset gcc16 -R '^runtime\.transaction$' --output-on-failure`.
 The completed project registers **18** CTest entries.
+
+## Phase 2 / Lesson 6 — Parked worker pools and external side effects
+
+`runtime::WorkerRuntime` stages CPU-backed render resources together with a new
+`ParkedWorkerPool`. Each staged `std::jthread` waits at an atomic gate, with a stop callback
+that cancels the whole staged pool if construction fails.
+The pool constructor waits for each launched thread to park, so the test hook can
+reliably simulate failure at the **fifth thread** after four have parked.
+
+- On failed staging, `std::jthread` destruction requests stop, changes the atomic gate to cancelled, wakes the
+  atomic wait, and joins every previously started thread.
+  The staged render resources are also destroyed through RAII.
+- RED publishes the new render state **before** starting the new worker pool;
+  a launch failure leaves new settings with the old workers.
+- GREEN prepares a complete bundle first and publishes it via a non-throwing
+  `std::unique_ptr::swap`. Only **after** publication does `activate()` release
+  the parked workers (atomic store and `notify_all`).
+- The worker task is a **simulated** atomic counter increment. Real tasks may
+  have irreversible external effects and cannot simply be rolled back.
+- This is a **single-controller**, non-concurrent-access model: the bundle swap
+  does not make concurrent readers safe. A real engine requires synchronized
+  publication and explicit worker lifecycle and task-draining policies.
+- The launch hook throws before constructing the selected `std::jthread` to
+  deterministically emulate an operating-system thread-creation failure.
+
+Run `ctest --preset gcc16 -R '^runtime\.worker-pool$' --output-on-failure`.
+After this lesson the project registers **19** CTest entries.
