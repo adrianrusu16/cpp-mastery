@@ -12,6 +12,8 @@ add_library(cpp_mastery::parsing ALIAS cpp_mastery_parsing)
 # Higher-level domain layer: explicitly depends on the lower-level parser.
 add_library(cpp_mastery_config STATIC
     src/ReadWorkerCount.cpp
+    src/ReadRenderDistance.cpp
+    src/ReadEngineConfig.cpp
 )
 target_include_directories(cpp_mastery_config PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -27,6 +29,8 @@ if(BUILD_TESTING)
         tests/parse_positive_int_tests.cpp
         tests/parse_zero_based_index_tests.cpp
         tests/read_worker_count_tests.cpp
+        tests/read_render_distance_tests.cpp
+        tests/read_engine_config_tests.cpp
     )
     target_link_libraries(cpp_mastery_parsing_tests PRIVATE
         cpp_mastery::config
@@ -34,5 +38,7 @@ if(BUILD_TESTING)
     )
     cpp_mastery_configure_target(cpp_mastery_parsing_tests)
     cpp_mastery_add_suite_tests(parsing cpp_mastery_parsing_tests positive-int zero-based-index)
-    cpp_mastery_add_suite_tests(config cpp_mastery_parsing_tests worker-count)
+    cpp_mastery_add_suite_tests(config cpp_mastery_parsing_tests
+        worker-count render-distance engine-config
+    )
 endif()

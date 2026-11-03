@@ -110,3 +110,45 @@ ctest --preset dev -R '^config\.worker-count$' --output-on-failure
 
 RED deliberately returns `empty_input` for all inputs; GREEN implements the
 composition. After Lesson 3, 15 project CTest entries should exist.
+
+## Phase 2 / Lesson 4 — Atomic configuration construction
+
+`read_render_distance(std::string_view)` uses the strict parser and enforces the
+independent **[1, 32]** domain limit. Its `ConfigError::field` is always the
+static literal `"render_distance"`. `ConfigConstraintError` and `ConfigError`
+now live in a shared `ConfigError.hpp` header, so the two validators do not
+depend on one another's declarations.
+
+`read_engine_config(workers, distance)` validates **both** fields and returns
+`std::expected<EngineConfig, ConfigErrors>`, where `ConfigErrors` is
+`std::vector<ConfigError>`. Its contract is:
+
+- On success, return a complete `EngineConfig{worker_threads, render_distance}`.
+  The object is constructed only after both validators succeed.
+- On failure, return **all** independently detected errors, ordered first by
+  `worker_threads`, then by `render_distance`.
+- Preserve the original parsing or domain cause, without replacing one with the other.
+- Never borrow the input storage in diagnostics. Field views refer to static literals.
+- Unlike the individual no-allocation validators, the vector-based builder is
+  **not `noexcept`**: collecting errors may throw (for example, `std::bad_alloc`).
+
+| Workers | Distance | Result |
+|---|---|---|
+| `"8"` | `"24"` | `EngineConfig{8, 24}` |
+| `"64"` | `"32"` | `EngineConfig{64, 32}` |
+| `"65"` | `"12x"` | worker limit, then invalid character |
+| `"0"` | `"33"` | zero out of range, then render limit |
+| `"8"` | `"12x"` | only the render-distance parsing error |
+
+RED deliberately uses incorrect placeholders so both new suites fail.
+GREEN composes `read_worker_count` and `read_render_distance`, collects
+errors in a deterministic order, and only then creates the valid object.
+No default or partial `EngineConfig` escapes.
+
+Run the two new suites with:
+
+```sh
+ctest --preset gcc16 -R '^config\.(render-distance|engine-config)$' --output-on-failure
+```
+
+After this lesson, the complete repository should register **17 CTest suites**.
