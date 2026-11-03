@@ -2,20 +2,12 @@
 #include <type_traits>
 #include <utility>
 
-
-template<typename T>
-void print_type_info()
+template <typename T> void print_type_info()
 {
-    std::cout
-        << "const: "
-        << std::is_const_v<std::remove_reference_t<T>>
-        << ", lvalue ref: "
-        << std::is_lvalue_reference_v<T>
-        << ", rvalue ref: "
-        << std::is_rvalue_reference_v<T>
-        << '\n';
+    std::cout << "const: " << std::is_const_v<std::remove_reference_t<T>> << ", lvalue ref: "
+              << std::is_lvalue_reference_v<T> << ", rvalue ref: "
+              << std::is_rvalue_reference_v<T> << '\n';
 }
-
 
 int main()
 {
@@ -24,7 +16,6 @@ int main()
 
     int& rx = x;
     const int& crx = x;
-
 
     std::cout << "=== auto ===\n";
 
@@ -38,7 +29,6 @@ int main()
     print_type_info<decltype(c)>();
     print_type_info<decltype(d)>();
 
-
     std::cout << "\n=== auto& ===\n";
 
     auto& e = x;
@@ -46,7 +36,6 @@ int main()
 
     print_type_info<decltype(e)>();
     print_type_info<decltype(f)>();
-
 
     std::cout << "\n=== auto&& ===\n";
 
@@ -56,13 +45,11 @@ int main()
     print_type_info<decltype(g)>();
     print_type_info<decltype(h)>();
 
-
     std::cout << "\n=== decltype ===\n";
 
     print_type_info<decltype(x)>();
     print_type_info<decltype((x))>();
     print_type_info<decltype(std::move(x))>();
-
 
     std::cout << "\n=== const decltype ===\n";
 

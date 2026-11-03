@@ -2,11 +2,11 @@
 // Build this file manually when studying the diagnostic difference between
 // constrained and unconstrained templates.
 
-struct Nothing {
+struct Nothing
+{
 };
 
-template<typename T>
-T unconstrained_add(T a, T b)
+template <typename T> T unconstrained_add(T a, T b)
 {
     return a + b;
 }

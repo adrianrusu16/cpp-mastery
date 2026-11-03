@@ -6,14 +6,13 @@
 #include <utility>
 #include <vector>
 
-namespace cpp_mastery::test {
+namespace cpp_mastery::test
+{
 
-class TestSuite {
-public:
-    explicit TestSuite(std::string name)
-        : name_{std::move(name)}
-    {
-    }
+class TestSuite
+{
+  public:
+    explicit TestSuite(std::string name) : name_{std::move(name)} {}
 
     TestSuite& add(std::string name, const TestFunction function)
     {
@@ -31,7 +30,7 @@ public:
         return tests_;
     }
 
-private:
+  private:
     std::string name_;
     std::vector<TestCase> tests_;
 };

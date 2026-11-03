@@ -6,8 +6,10 @@
 #include <stdexcept>
 #include <string>
 
-namespace cpp_mastery::vector_tests {
-namespace {
+namespace cpp_mastery::vector_tests
+{
+namespace
+{
 
 void at_returns_mutable_reference()
 {

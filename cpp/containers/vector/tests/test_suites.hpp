@@ -2,7 +2,8 @@
 
 #include <cpp_mastery/testing/TestSuite.hpp>
 
-namespace cpp_mastery::vector_tests {
+namespace cpp_mastery::vector_tests
+{
 
 test::TestSuite make_copy_suite();
 test::TestSuite make_move_suite();

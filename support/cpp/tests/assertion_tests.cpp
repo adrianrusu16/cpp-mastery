@@ -9,7 +9,8 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace {
+namespace
+{
 
 namespace test = cpp_mastery::test;
 
@@ -40,10 +41,12 @@ void failed_check_records_failure_and_continues(bootstrap::Checks& checks)
     checks.expect(continued, "failed CHECK continues execution");
     checks.expect(result.failures.size() == 1U, "failed CHECK records one failure");
     checks.expect(result.status() == test::TestStatus::failed, "failed CHECK has failed status");
-    if (result.failures.size() == 1U) {
+    if (result.failures.size() == 1U)
+    {
         const auto& failure = result.failures.front();
         checks.expect(failure.expression == "false", "CHECK captures the source expression");
-        checks.expect(failure.message == "condition evaluated to false", "CHECK records the message");
+        checks.expect(failure.message == "condition evaluated to false",
+                      "CHECK records the message");
         checks.expect(failure.file == __FILE__, "CHECK captures the correct source file");
         checks.expect(failure.line == expected_line, "CHECK captures the invocation line");
     }
@@ -56,10 +59,13 @@ void failed_require_records_failure_and_aborts(bootstrap::Checks& checks)
     bool continued = false;
     {
         test::detail::ActiveResultGuard guard{result};
-        try {
+        try
+        {
             REQUIRE(false);
             continued = true;
-        } catch (const test::AbortTest&) {
+        }
+        catch (const test::AbortTest&)
+        {
             caught_abort = true;
         }
     }
@@ -80,12 +86,13 @@ void nonfatal_failures_accumulate(bootstrap::Checks& checks)
     }
 
     checks.expect(result.failures.size() == 2U, "multiple CHECK failures accumulate");
-    if (result.failures.size() == 2U) {
-        checks.expect(result.failures[0].expression == "false", "first failure keeps its expression");
+    if (result.failures.size() == 2U)
+    {
+        checks.expect(result.failures[0].expression == "false",
+                      "first failure keeps its expression");
         checks.expect(result.failures[1].expression == "2 == 5", "CHECK_EQ keeps both expressions");
-        checks.expect(
-            result.failures[1].message == "expected 5 = 5, actual 2 = 2",
-            "CHECK_EQ includes both values");
+        checks.expect(result.failures[1].message == "expected 5 = 5, actual 2 = 2",
+                      "CHECK_EQ includes both values");
     }
 }
 
@@ -95,18 +102,17 @@ void source_location_is_preserved(bootstrap::Checks& checks)
     const auto location = std::source_location::current();
     {
         test::detail::ActiveResultGuard guard{result};
-        test::detail::check(
-            false,
-            "health > 0",
-            test::detail::FailureMode::continue_test,
-            location);
+        test::detail::check(false, "health > 0", test::detail::FailureMode::continue_test,
+                            location);
     }
 
     checks.expect(result.failures.size() == 1U, "source-location check fails once");
-    if (result.failures.size() == 1U) {
+    if (result.failures.size() == 1U)
+    {
         const auto& failure = result.failures.front();
         checks.expect(failure.file == location.file_name(), "failure preserves the file");
-        checks.expect(failure.function == location.function_name(), "failure preserves the function");
+        checks.expect(failure.function == location.function_name(),
+                      "failure preserves the function");
         checks.expect(failure.line == location.line(), "failure preserves the line");
         checks.expect(failure.column == location.column(), "failure preserves the column");
     }
@@ -140,15 +146,19 @@ void context_restores_after_exception(bootstrap::Checks& checks)
     test::TestResult result;
     test::TestResult* const initial = test::detail::active_result;
     bool caught = false;
-    try {
+    try
+    {
         test::detail::ActiveResultGuard guard{result};
         throw std::runtime_error{"simulated failure"};
-    } catch (const std::runtime_error&) {
+    }
+    catch (const std::runtime_error&)
+    {
         caught = true;
     }
 
     checks.expect(caught, "the simulated exception was caught");
-    checks.expect(test::detail::active_result == initial, "exception restores the previous context");
+    checks.expect(test::detail::active_result == initial,
+                  "exception restores the previous context");
 }
 
 } // namespace

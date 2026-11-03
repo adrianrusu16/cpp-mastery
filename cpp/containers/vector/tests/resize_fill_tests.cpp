@@ -5,8 +5,10 @@
 
 #include <string>
 
-namespace cpp_mastery::vector_tests {
-namespace {
+namespace cpp_mastery::vector_tests
+{
+namespace
+{
 
 void resize_fill_grows_in_place()
 {
@@ -62,7 +64,8 @@ void resize_fill_reallocates_and_copies_value()
     CHECK_EQ(values[0], "zero");
     CHECK_EQ(values[1], "one");
 
-    for (std::size_t index = 2; index < values.size(); ++index) {
+    for (std::size_t index = 2; index < values.size(); ++index)
+    {
         CHECK_EQ(values[index], "fill");
     }
 }
@@ -82,7 +85,8 @@ void resize_fill_preserves_alias_during_reallocation()
     CHECK_EQ(values[0], "zero");
     CHECK_EQ(values[1], "one");
 
-    for (std::size_t index = 2; index < values.size(); ++index) {
+    for (std::size_t index = 2; index < values.size(); ++index)
+    {
         CHECK_EQ(values[index], "zero");
     }
 }
@@ -95,7 +99,8 @@ test::TestSuite make_resize_fill_suite()
     suite.add("grows in place", resize_fill_grows_in_place)
         .add("supports alias in place", resize_fill_supports_alias_in_place)
         .add("reallocates and copies fill value", resize_fill_reallocates_and_copies_value)
-        .add("preserves alias during reallocation", resize_fill_preserves_alias_during_reallocation);
+        .add("preserves alias during reallocation",
+             resize_fill_preserves_alias_during_reallocation);
     return suite;
 }
 

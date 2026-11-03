@@ -1,11 +1,9 @@
 #include <cpp_mastery/raii/IntBuffer.hpp>
 
-namespace cpp_mastery {
-
-IntBuffer::IntBuffer(const std::size_t size)
-    : data_(size)
+namespace cpp_mastery
 {
-}
+
+IntBuffer::IntBuffer(const std::size_t size) : data_(size) {}
 
 std::size_t IntBuffer::size() const noexcept
 {

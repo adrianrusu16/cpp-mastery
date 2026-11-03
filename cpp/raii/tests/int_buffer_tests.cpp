@@ -5,8 +5,10 @@
 
 #include <utility>
 
-namespace cpp_mastery::raii_tests {
-namespace {
+namespace cpp_mastery::raii_tests
+{
+namespace
+{
 
 using cpp_mastery::IntBuffer;
 
@@ -164,12 +166,17 @@ test::TestSuite make_int_buffer_suite()
 {
     test::TestSuite suite{"int-buffer"};
     suite.add("construction exposes owned elements", construction_exposes_owned_elements)
-        .add("copy construction owns independent storage", copy_construction_owns_independent_storage)
-        .add("copy assignment replaces value independently", copy_assignment_replaces_value_independently)
-        .add("move construction transfers value and empties source", move_construction_transfers_value_and_empties_source)
-        .add("move assignment transfers value and empties source", move_assignment_transfers_value_and_empties_source)
+        .add("copy construction owns independent storage",
+             copy_construction_owns_independent_storage)
+        .add("copy assignment replaces value independently",
+             copy_assignment_replaces_value_independently)
+        .add("move construction transfers value and empties source",
+             move_construction_transfers_value_and_empties_source)
+        .add("move assignment transfers value and empties source",
+             move_assignment_transfers_value_and_empties_source)
         .add("self-copy assignment preserves value", self_copy_assignment_preserves_value)
-        .add("self-move assignment leaves object reusable", self_move_assignment_leaves_object_reusable)
+        .add("self-move assignment leaves object reusable",
+             self_move_assignment_leaves_object_reusable)
         .add("moved-from buffer can be assigned again", moved_from_buffer_can_be_assigned_again);
     return suite;
 }

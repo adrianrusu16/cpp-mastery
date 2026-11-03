@@ -7,8 +7,10 @@
 #include <string>
 #include <utility>
 
-namespace cpp_mastery::vector_tests {
-namespace {
+namespace cpp_mastery::vector_tests
+{
+namespace
+{
 
 void emplace_back_constructs_in_place()
 {
@@ -121,9 +123,12 @@ test::TestSuite make_modifier_suite()
 {
     test::TestSuite suite{"modifiers"};
     suite.add("emplace_back constructs in place", emplace_back_constructs_in_place)
-        .add("push_back preserves self-copy during reallocation", push_back_preserves_self_copy_during_reallocation)
-        .add("push_back supports self-move during reallocation", push_back_supports_self_move_during_reallocation)
-        .add("pop_back removes last element without shrinking capacity", pop_back_removes_last_element_without_shrinking_capacity)
+        .add("push_back preserves self-copy during reallocation",
+             push_back_preserves_self_copy_during_reallocation)
+        .add("push_back supports self-move during reallocation",
+             push_back_supports_self_move_during_reallocation)
+        .add("pop_back removes last element without shrinking capacity",
+             pop_back_removes_last_element_without_shrinking_capacity)
         .add("pop_back destroys removed element", pop_back_destroys_removed_element);
     return suite;
 }

@@ -5,15 +5,16 @@
 #include <stdexcept>
 #include <utility>
 
-namespace cpp_mastery {
+namespace cpp_mastery
+{
 
-template<typename T>
-class Vector {
-private:
+template <typename T> class Vector
+{
+  private:
     using Allocator = std::allocator<T>;
     using AllocatorTraits = std::allocator_traits<Allocator>;
 
-public:
+  public:
     using value_type = T;
     using size_type = std::size_t;
     using reference = T&;
@@ -64,16 +65,12 @@ public:
     void push_back(const T& value);
     void push_back(T&& value);
 
-    template<typename... Args>
-    reference emplace_back(Args&&... args);
+    template <typename... Args> reference emplace_back(Args&&... args);
 
-private:
+  private:
     static constexpr size_type initial_capacity = 4;
 
-    static void destroy_range_reverse(
-        pointer elements,
-        size_type first,
-        size_type last) noexcept;
+    static void destroy_range_reverse(pointer elements, size_type first, size_type last) noexcept;
 
     void destroy_elements() noexcept;
     void deallocate_storage() noexcept;
@@ -81,23 +78,17 @@ private:
     void shrink_to(size_type new_size) noexcept;
     void swap_storage(Vector& other) noexcept;
 
-    void commit_reallocation(
-        pointer new_data,
-        size_type new_size,
-        size_type new_capacity) noexcept;
+    void commit_reallocation(pointer new_data, size_type new_size, size_type new_capacity) noexcept;
 
     [[nodiscard]] size_type next_capacity() const;
 
-    template<typename ConstructElement>
+    template <typename ConstructElement>
     void grow_to(size_type new_size, ConstructElement&& construct_element);
 
-    template<typename ConstructElement>
-    void reallocate_and_grow(
-        size_type new_size,
-        ConstructElement&& construct_element);
+    template <typename ConstructElement>
+    void reallocate_and_grow(size_type new_size, ConstructElement&& construct_element);
 
-    template<typename... Args>
-    reference grow_and_emplace(Args&&... args);
+    template <typename... Args> reference grow_and_emplace(Args&&... args);
 
     [[no_unique_address]] Allocator allocator_{};
     pointer data_ = nullptr;

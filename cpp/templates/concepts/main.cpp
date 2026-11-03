@@ -2,48 +2,37 @@
 #include <iostream>
 #include <string>
 
-
-template<typename T>
-concept Addable = requires(T a, T b)
-{
+template <typename T>
+concept Addable = requires(T a, T b) {
     { a + b } -> std::convertible_to<T>;
 };
 
-
-template<Addable T>
-T add(T a, T b)
+template <Addable T> T add(T a, T b)
 {
     return a + b;
 }
 
-
-template<typename T>
-requires std::integral<T>
+template <typename T>
+    requires std::integral<T>
 T multiply(T a, T b)
 {
     return a * b;
 }
 
-
 struct Nothing
 {
 };
 
-template<typename T>
-T unconstrained_add(T a, T b)
+template <typename T> T unconstrained_add(T a, T b)
 {
     return a + b;
 }
-
 
 int main()
 {
     std::cout << add(10, 20) << '\n';
 
-    std::cout << add(
-        std::string{"hello "},
-        std::string{"world"}
-    ) << '\n';
+    std::cout << add(std::string{"hello "}, std::string{"world"}) << '\n';
 
     std::cout << multiply(6, 7) << '\n';
 

@@ -2,13 +2,10 @@
 #include <string>
 #include <utility>
 
-template<typename T>
-class Box {
-public:
-    explicit Box(T value)
-        : value_{std::move(value)}
-    {
-    }
+template <typename T> class Box
+{
+  public:
+    explicit Box(T value) : value_{std::move(value)} {}
 
     T& get() noexcept
     {
@@ -20,7 +17,7 @@ public:
         return value_;
     }
 
-private:
+  private:
     T value_;
 };
 

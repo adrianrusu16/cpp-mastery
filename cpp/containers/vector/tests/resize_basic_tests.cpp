@@ -6,8 +6,10 @@
 
 #include <string>
 
-namespace cpp_mastery::vector_tests {
-namespace {
+namespace cpp_mastery::vector_tests
+{
+namespace
+{
 
 void resize_shrinks_without_reallocating()
 {
@@ -93,7 +95,8 @@ void resize_reallocates_when_capacity_is_insufficient()
     CHECK_EQ(values[0], 10);
     CHECK_EQ(values[1], 20);
 
-    for (std::size_t index = 2; index < values.size(); ++index) {
+    for (std::size_t index = 2; index < values.size(); ++index)
+    {
         CHECK_EQ(values[index], 0);
     }
 }
@@ -105,8 +108,10 @@ test::TestSuite make_resize_suite()
     test::TestSuite suite{"resize"};
     suite.add("shrinks without reallocating", resize_shrinks_without_reallocating)
         .add("shrink destroys removed elements", resize_shrink_destroys_removed_elements)
-        .add("grows in place when capacity is available", resize_grows_in_place_when_capacity_is_available)
-        .add("reallocates when capacity is insufficient", resize_reallocates_when_capacity_is_insufficient);
+        .add("grows in place when capacity is available",
+             resize_grows_in_place_when_capacity_is_available)
+        .add("reallocates when capacity is insufficient",
+             resize_reallocates_when_capacity_is_insufficient);
     return suite;
 }
 

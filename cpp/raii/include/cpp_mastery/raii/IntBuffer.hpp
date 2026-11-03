@@ -3,10 +3,12 @@
 #include <cstddef>
 #include <vector>
 
-namespace cpp_mastery {
+namespace cpp_mastery
+{
 
-class IntBuffer {
-public:
+class IntBuffer
+{
+  public:
     explicit IntBuffer(std::size_t size);
 
     [[nodiscard]] std::size_t size() const noexcept;
@@ -14,7 +16,7 @@ public:
     int& operator[](std::size_t index) noexcept;
     const int& operator[](std::size_t index) const noexcept;
 
-private:
+  private:
     std::vector<int> data_;
 };
 

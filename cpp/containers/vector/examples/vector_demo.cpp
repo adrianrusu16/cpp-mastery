@@ -7,9 +7,11 @@
 #include <ranges>
 #include <string>
 
-namespace {
+namespace
+{
 
-struct alignas(64) CacheLineData {
+struct alignas(64) CacheLineData
+{
     int values[16]{};
 };
 
@@ -24,7 +26,8 @@ void demonstrate_alias_safe_growth()
     values.push_back(values.front());
 
     std::cout << "alias-safe growth: ";
-    for (const auto& value : values) {
+    for (const auto& value : values)
+    {
         std::cout << value << ' ';
     }
     std::cout << '\n';
@@ -41,7 +44,8 @@ void demonstrate_ranges()
     std::ranges::sort(values);
 
     std::cout << "ranges::sort: ";
-    for (const int value : values) {
+    for (const int value : values)
+    {
         std::cout << value << ' ';
     }
     std::cout << '\n';
@@ -55,7 +59,8 @@ void demonstrate_alignment()
     std::cout << "alignof(CacheLineData): " << alignof(CacheLineData) << '\n';
     std::cout << "element address mod 64: ";
 
-    for (const auto& value : values) {
+    for (const auto& value : values)
+    {
         const auto address = reinterpret_cast<std::uintptr_t>(&value);
         std::cout << (address % 64U) << ' ';
     }

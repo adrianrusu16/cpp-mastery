@@ -6,8 +6,10 @@
 
 #include <stdexcept>
 
-namespace cpp_mastery::vector_tests {
-namespace {
+namespace cpp_mastery::vector_tests
+{
+namespace
+{
 
 void fill_reallocation_rolls_back_fill_copy_failure()
 {
@@ -85,8 +87,11 @@ void fill_reallocation_rolls_back_relocation_copy_failure()
 test::TestSuite make_resize_fill_exception_suite()
 {
     test::TestSuite suite{"resize-fill-exceptions"};
-    suite.add("fill reallocation rolls back fill-copy failure", fill_reallocation_rolls_back_fill_copy_failure)
-        .add("fill reallocation rolls back relocation-copy failure", fill_reallocation_rolls_back_relocation_copy_failure);
+    suite
+        .add("fill reallocation rolls back fill-copy failure",
+             fill_reallocation_rolls_back_fill_copy_failure)
+        .add("fill reallocation rolls back relocation-copy failure",
+             fill_reallocation_rolls_back_relocation_copy_failure);
     return suite;
 }
 

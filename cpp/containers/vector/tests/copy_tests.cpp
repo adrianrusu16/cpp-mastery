@@ -7,8 +7,10 @@
 #include <stdexcept>
 #include <string>
 
-namespace cpp_mastery::vector_tests {
-namespace {
+namespace cpp_mastery::vector_tests
+{
+namespace
+{
 
 void copy_constructor_copies_only_live_elements()
 {
@@ -163,11 +165,16 @@ void copy_assignment_has_strong_exception_guarantee()
 test::TestSuite make_copy_suite()
 {
     test::TestSuite suite{"copy"};
-    suite.add("copy constructor copies only live elements", copy_constructor_copies_only_live_elements)
+    suite
+        .add("copy constructor copies only live elements",
+             copy_constructor_copies_only_live_elements)
         .add("copy constructor rolls back partial copy", copy_constructor_rolls_back_partial_copy)
-        .add("copy assignment replaces value with deep copy", copy_assignment_replaces_value_with_deep_copy)
-        .add("self-copy assignment preserves storage and values", self_copy_assignment_preserves_storage_and_values)
-        .add("copy assignment has strong exception guarantee", copy_assignment_has_strong_exception_guarantee);
+        .add("copy assignment replaces value with deep copy",
+             copy_assignment_replaces_value_with_deep_copy)
+        .add("self-copy assignment preserves storage and values",
+             self_copy_assignment_preserves_storage_and_values)
+        .add("copy assignment has strong exception guarantee",
+             copy_assignment_has_strong_exception_guarantee);
     return suite;
 }
 

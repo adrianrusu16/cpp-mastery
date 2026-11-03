@@ -6,8 +6,10 @@
 
 #include <stdexcept>
 
-namespace cpp_mastery::vector_tests {
-namespace {
+namespace cpp_mastery::vector_tests
+{
+namespace
+{
 
 void in_place_growth_rolls_back_default_construction_failure()
 {
@@ -117,9 +119,13 @@ void reallocation_rolls_back_relocation_copy_failure()
 test::TestSuite make_resize_exception_suite()
 {
     test::TestSuite suite{"resize-exceptions"};
-    suite.add("in-place growth rolls back default-construction failure", in_place_growth_rolls_back_default_construction_failure)
-        .add("reallocation rolls back default-construction failure", reallocation_rolls_back_default_construction_failure)
-        .add("reallocation rolls back relocation-copy failure", reallocation_rolls_back_relocation_copy_failure);
+    suite
+        .add("in-place growth rolls back default-construction failure",
+             in_place_growth_rolls_back_default_construction_failure)
+        .add("reallocation rolls back default-construction failure",
+             reallocation_rolls_back_default_construction_failure)
+        .add("reallocation rolls back relocation-copy failure",
+             reallocation_rolls_back_relocation_copy_failure);
     return suite;
 }
 

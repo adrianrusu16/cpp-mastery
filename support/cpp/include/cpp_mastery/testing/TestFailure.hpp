@@ -3,9 +3,11 @@
 #include <cstdint>
 #include <string>
 
-namespace cpp_mastery::test {
+namespace cpp_mastery::test
+{
 
-struct TestFailure {
+struct TestFailure
+{
     std::string expression;
     std::string message;
     std::string file;
@@ -14,7 +16,8 @@ struct TestFailure {
     std::uint_least32_t column = 0;
 };
 
-class AbortTest final {
+class AbortTest final
+{
 };
 
 } // namespace cpp_mastery::test

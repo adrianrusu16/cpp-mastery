@@ -6,8 +6,10 @@
 #include <string>
 #include <utility>
 
-namespace cpp_mastery::vector_tests {
-namespace {
+namespace cpp_mastery::vector_tests
+{
+namespace
+{
 
 void move_constructor_transfers_allocation()
 {
@@ -103,7 +105,8 @@ test::TestSuite make_move_suite()
 {
     test::TestSuite suite{"move"};
     suite.add("move constructor transfers allocation", move_constructor_transfers_allocation)
-        .add("move assignment replaces destination allocation", move_assignment_replaces_destination_allocation)
+        .add("move assignment replaces destination allocation",
+             move_assignment_replaces_destination_allocation)
         .add("self-move assignment is a safe no-op", self_move_assignment_is_safe_noop);
     return suite;
 }

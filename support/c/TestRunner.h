@@ -6,25 +6,28 @@
 
 typedef int (*cpp_mastery_test_function)(void);
 
-typedef struct {
-    const char *name;
+typedef struct
+{
+    const char* name;
     cpp_mastery_test_function function;
 } cpp_mastery_test_case;
 
-static inline int cpp_mastery_run_tests(
-    const cpp_mastery_test_case *tests,
-    const size_t count)
+static inline int cpp_mastery_run_tests(const cpp_mastery_test_case* tests, const size_t count)
 {
     size_t passed = 0;
     size_t failed = 0;
 
-    for (size_t i = 0; i < count; ++i) {
+    for (size_t i = 0; i < count; ++i)
+    {
         const int success = tests[i].function();
         printf("[%s] %s\n", success ? "PASS" : "FAIL", tests[i].name);
 
-        if (success) {
+        if (success)
+        {
             ++passed;
-        } else {
+        }
+        else
+        {
             ++failed;
         }
     }

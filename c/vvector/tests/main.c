@@ -1,7 +1,7 @@
 #include "TestRunner.h"
 #include "test_cases.h"
 
-#define TEST_CASE(name) { #name, name }
+#define TEST_CASE(name) {#name, name}
 
 int main(void)
 {

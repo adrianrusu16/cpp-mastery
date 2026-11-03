@@ -6,7 +6,8 @@
 #include <algorithm>
 #include <ranges>
 
-namespace cpp_mastery::vector_tests {
+namespace cpp_mastery::vector_tests
+{
 
 static_assert(std::ranges::range<Vector<int>>);
 static_assert(std::ranges::sized_range<Vector<int>>);
@@ -14,7 +15,8 @@ static_assert(std::ranges::common_range<Vector<int>>);
 static_assert(std::ranges::random_access_range<Vector<int>>);
 static_assert(std::ranges::contiguous_range<Vector<int>>);
 
-namespace {
+namespace
+{
 
 void begin_end_expose_mutable_storage()
 {
@@ -69,7 +71,8 @@ void range_based_for_iterates_all_elements()
     values.push_back(30);
 
     int sum = 0;
-    for (const int value : values) {
+    for (const int value : values)
+    {
         sum += value;
     }
 
@@ -101,7 +104,8 @@ void const_range_based_for_uses_const_iterators()
 
     const Vector<int>& values = mutable_values;
     int sum = 0;
-    for (const int value : values) {
+    for (const int value : values)
+    {
         sum += value;
     }
 
@@ -137,7 +141,8 @@ test::TestSuite make_iteration_suite()
         .add("begin/end preserve constness", begin_end_preserve_constness)
         .add("range-based for iterates all elements", range_based_for_iterates_all_elements)
         .add("std::sort accepts vector iterators", std_sort_accepts_vector_iterators)
-        .add("const range-based for uses const iterators", const_range_based_for_uses_const_iterators)
+        .add("const range-based for uses const iterators",
+             const_range_based_for_uses_const_iterators)
         .add("ranges algorithms recognize vector", ranges_algorithms_recognize_vector);
     return suite;
 }

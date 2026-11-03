@@ -2,11 +2,13 @@
 
 #include <string>
 
-namespace cpp_mastery::test {
+namespace cpp_mastery::test
+{
 
 using TestFunction = void (*)();
 
-struct TestCase {
+struct TestCase
+{
     std::string name;
     TestFunction function = nullptr;
 };

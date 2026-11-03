@@ -7,15 +7,18 @@
 #include <string>
 #include <vector>
 
-namespace cpp_mastery::test {
+namespace cpp_mastery::test
+{
 
-enum class TestStatus {
+enum class TestStatus
+{
     passed,
     failed,
     error,
 };
 
-struct TestResult {
+struct TestResult
+{
     std::string suite;
     std::string name;
     std::vector<TestFailure> failures;
@@ -24,7 +27,8 @@ struct TestResult {
 
     [[nodiscard]] TestStatus status() const noexcept
     {
-        if (unexpected_exception.has_value()) {
+        if (unexpected_exception.has_value())
+        {
             return TestStatus::error;
         }
         return failures.empty() ? TestStatus::passed : TestStatus::failed;

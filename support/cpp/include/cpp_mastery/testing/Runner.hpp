@@ -5,8 +5,8 @@
 #include "TestSuite.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <cctype>
+#include <chrono>
 #include <cstddef>
 #include <exception>
 #include <iostream>
@@ -17,14 +17,13 @@
 #include <utility>
 #include <vector>
 
-namespace cpp_mastery::test {
+namespace cpp_mastery::test
+{
 
-class Runner {
-public:
-    explicit Runner(std::string title)
-        : title_{std::move(title)}
-    {
-    }
+class Runner
+{
+  public:
+    explicit Runner(std::string title) : title_{std::move(title)} {}
 
     Runner& add(TestSuite suite)
     {
@@ -35,20 +34,25 @@ public:
     [[nodiscard]] int run(const int argc, char** argv) const
     {
         Options options;
-        try {
+        try
+        {
             options = parse_options(argc, argv);
-        } catch (const std::invalid_argument& error) {
+        }
+        catch (const std::invalid_argument& error)
+        {
             std::cerr << error.what() << "\n\n";
             print_usage(argv[0]);
             return 2;
         }
 
-        if (options.help) {
+        if (options.help)
+        {
             print_usage(argv[0]);
             return 0;
         }
 
-        if (options.list) {
+        if (options.list)
+        {
             list_tests(options);
             return 0;
         }
@@ -60,20 +64,25 @@ public:
         bool matched_any = false;
         const auto run_start = std::chrono::steady_clock::now();
 
-        for (const TestSuite& suite : suites_) {
-            if (!matches_suite(suite.name(), options.suite_filter)) {
+        for (const TestSuite& suite : suites_)
+        {
+            if (!matches_suite(suite.name(), options.suite_filter))
+            {
                 continue;
             }
 
             bool suite_started = false;
 
-            for (const TestCase& test : suite.tests()) {
-                if (!matches(test.name, options.test_filter)) {
+            for (const TestCase& test : suite.tests())
+            {
+                if (!matches(test.name, options.test_filter))
+                {
                     continue;
                 }
 
                 matched_any = true;
-                if (!suite_started) {
+                if (!suite_started)
+                {
                     reporter.suite_started(suite.name());
                     suite_started = true;
                 }
@@ -82,23 +91,25 @@ public:
                 reporter.test_finished(result);
 
                 ++summary.total;
-                switch (result.status()) {
-                    case TestStatus::passed:
-                        ++summary.passed;
-                        break;
-                    case TestStatus::failed:
-                        ++summary.failed;
-                        break;
-                    case TestStatus::error:
-                        ++summary.errors;
-                        break;
+                switch (result.status())
+                {
+                case TestStatus::passed:
+                    ++summary.passed;
+                    break;
+                case TestStatus::failed:
+                    ++summary.failed;
+                    break;
+                case TestStatus::error:
+                    ++summary.errors;
+                    break;
                 }
             }
         }
 
         summary.duration = std::chrono::steady_clock::now() - run_start;
 
-        if (!matched_any) {
+        if (!matched_any)
+        {
             std::cerr << "No tests matched the selected filters.\n";
             return 2;
         }
@@ -107,8 +118,9 @@ public:
         return summary.failed == 0 && summary.errors == 0 ? 0 : 1;
     }
 
-private:
-    struct Options {
+  private:
+    struct Options
+    {
         bool list = false;
         bool verbose = false;
         bool help = false;
@@ -116,9 +128,7 @@ private:
         std::optional<std::string> test_filter;
     };
 
-    [[nodiscard]] static TestResult execute(
-        const std::string& suite_name,
-        const TestCase& test)
+    [[nodiscard]] static TestResult execute(const std::string& suite_name, const TestCase& test)
     {
         TestResult result;
         result.suite = suite_name;
@@ -127,16 +137,24 @@ private:
         const auto start = std::chrono::steady_clock::now();
         detail::ActiveResultGuard guard{result};
 
-        try {
-            if (test.function == nullptr) {
+        try
+        {
+            if (test.function == nullptr)
+            {
                 throw std::logic_error{"test case has no function"};
             }
             test.function();
-        } catch (const AbortTest&) {
+        }
+        catch (const AbortTest&)
+        {
             // REQUIRE intentionally aborts only the current test.
-        } catch (const std::exception& error) {
+        }
+        catch (const std::exception& error)
+        {
             result.unexpected_exception = error.what();
-        } catch (...) {
+        }
+        catch (...)
+        {
             result.unexpected_exception = "unknown non-standard exception";
         }
 
@@ -148,26 +166,40 @@ private:
     {
         Options options;
 
-        for (int index = 1; index < argc; ++index) {
+        for (int index = 1; index < argc; ++index)
+        {
             const std::string_view argument{argv[index]};
 
-            if (argument == "--list") {
+            if (argument == "--list")
+            {
                 options.list = true;
-            } else if (argument == "--verbose") {
+            }
+            else if (argument == "--verbose")
+            {
                 options.verbose = true;
-            } else if (argument == "--help" || argument == "-h") {
+            }
+            else if (argument == "--help" || argument == "-h")
+            {
                 options.help = true;
-            } else if (argument == "--suite") {
-                if (++index >= argc) {
+            }
+            else if (argument == "--suite")
+            {
+                if (++index >= argc)
+                {
                     throw std::invalid_argument{"--suite requires a value"};
                 }
                 options.suite_filter = argv[index];
-            } else if (argument == "--test") {
-                if (++index >= argc) {
+            }
+            else if (argument == "--test")
+            {
+                if (++index >= argc)
+                {
                     throw std::invalid_argument{"--test requires a value"};
                 }
                 options.test_filter = argv[index];
-            } else {
+            }
+            else
+            {
                 throw std::invalid_argument{"unknown test-runner option: " + std::string{argument}};
             }
         }
@@ -188,18 +220,23 @@ private:
     void list_tests(const Options& options) const
     {
         bool matched_any = false;
-        for (const TestSuite& suite : suites_) {
-            if (!matches_suite(suite.name(), options.suite_filter)) {
+        for (const TestSuite& suite : suites_)
+        {
+            if (!matches_suite(suite.name(), options.suite_filter))
+            {
                 continue;
             }
 
             bool printed_suite = false;
-            for (const TestCase& test : suite.tests()) {
-                if (!matches(test.name, options.test_filter)) {
+            for (const TestCase& test : suite.tests())
+            {
+                if (!matches(test.name, options.test_filter))
+                {
                     continue;
                 }
 
-                if (!printed_suite) {
+                if (!printed_suite)
+                {
                     std::cout << suite.name() << '\n';
                     printed_suite = true;
                 }
@@ -209,26 +246,27 @@ private:
             }
         }
 
-        if (!matched_any) {
+        if (!matched_any)
+        {
             std::cout << "No tests matched the selected filters.\n";
         }
     }
 
-    [[nodiscard]] static bool matches_suite(
-        const std::string_view value,
-        const std::optional<std::string>& filter)
+    [[nodiscard]] static bool matches_suite(const std::string_view value,
+                                            const std::optional<std::string>& filter)
     {
-        if (!filter.has_value()) {
+        if (!filter.has_value())
+        {
             return true;
         }
         return lowercase(value) == lowercase(*filter);
     }
 
-    [[nodiscard]] static bool matches(
-        const std::string_view value,
-        const std::optional<std::string>& filter)
+    [[nodiscard]] static bool matches(const std::string_view value,
+                                      const std::optional<std::string>& filter)
     {
-        if (!filter.has_value()) {
+        if (!filter.has_value())
+        {
             return true;
         }
 
@@ -240,9 +278,8 @@ private:
     [[nodiscard]] static std::string lowercase(const std::string_view value)
     {
         std::string result{value};
-        std::ranges::transform(result, result.begin(), [](const unsigned char character) {
-            return static_cast<char>(std::tolower(character));
-        });
+        std::ranges::transform(result, result.begin(), [](const unsigned char character)
+                               { return static_cast<char>(std::tolower(character)); });
         return result;
     }
 
