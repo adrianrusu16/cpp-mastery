@@ -116,26 +116,6 @@ private:
         std::optional<std::string> test_filter;
     };
 
-    class ActiveResultGuard {
-    public:
-        explicit ActiveResultGuard(TestResult& result)
-            : previous_{detail::active_result}
-        {
-            detail::active_result = &result;
-        }
-
-        ~ActiveResultGuard()
-        {
-            detail::active_result = previous_;
-        }
-
-        ActiveResultGuard(const ActiveResultGuard&) = delete;
-        ActiveResultGuard& operator=(const ActiveResultGuard&) = delete;
-
-    private:
-        TestResult* previous_;
-    };
-
     [[nodiscard]] static TestResult execute(
         const std::string& suite_name,
         const TestCase& test)
@@ -145,7 +125,7 @@ private:
         result.name = test.name;
 
         const auto start = std::chrono::steady_clock::now();
-        ActiveResultGuard guard{result};
+        detail::ActiveResultGuard guard{result};
 
         try {
             if (test.function == nullptr) {

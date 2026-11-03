@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TestFailure.hpp"
-#include "TestResult.hpp"
+#include "TestContext.hpp"
 
 #include <concepts>
 #include <exception>
@@ -15,8 +15,6 @@
 
 namespace cpp_mastery::test {
 namespace detail {
-
-inline thread_local TestResult* active_result = nullptr;
 
 enum class FailureMode {
     continue_test,

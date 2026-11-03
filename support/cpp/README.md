@@ -56,7 +56,7 @@ int main(int argc, char** argv)
 
 ```text
 --list
---suite <substring>
+--suite <name>
 --test <substring>
 --verbose
 --help
@@ -64,3 +64,20 @@ int main(int argc, char** argv)
 
 The explicit suite factories are deliberate. The framework avoids hidden static
 registration so the control flow remains visible while learning C++.
+
+## Framework self-tests
+
+The framework has an independent bootstrap test executable under `support/cpp/tests`.
+It deliberately does **not** use `CHECK` or `REQUIRE` to validate its own assertions:
+`bootstrap::Checks` records expectations independently. This avoids passing tests
+when the very macros under test are broken.
+
+`TestContext.hpp` owns the active-result pointer and its RAII guard; both the
+runner and bootstrap tests use that shared primitive. The guard restores the
+previous result pointer after normal completion or exception unwinding.
+
+Run the focused CTest target with:
+
+```sh
+ctest --preset dev -R '^testing\.assertions$' --output-on-failure
+```
