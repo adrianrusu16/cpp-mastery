@@ -11,6 +11,7 @@
 #include <exception>
 #include <iostream>
 #include <optional>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -33,6 +34,13 @@ class Runner
 
     [[nodiscard]] int run(const int argc, char** argv) const
     {
+        return run(argc, argv, std::cout, std::cerr);
+    }
+
+    // Stream injection keeps execution testable without redirecting process-wide std::cout/cerr.
+    [[nodiscard]] int run(const int argc, char** argv, std::ostream& output,
+                          std::ostream& error_output) const
+    {
         Options options;
         try
         {
@@ -40,24 +48,24 @@ class Runner
         }
         catch (const std::invalid_argument& error)
         {
-            std::cerr << error.what() << "\n\n";
-            print_usage(argv[0]);
+            error_output << error.what() << "\n\n";
+            print_usage(output, argv[0]);
             return 2;
         }
 
         if (options.help)
         {
-            print_usage(argv[0]);
+            print_usage(output, argv[0]);
             return 0;
         }
 
         if (options.list)
         {
-            list_tests(options);
+            list_tests(options, output);
             return 0;
         }
 
-        ConsoleReporter reporter{options.verbose};
+        ConsoleReporter reporter{options.verbose, output};
         reporter.run_started(title_);
 
         RunSummary summary;
@@ -110,7 +118,7 @@ class Runner
 
         if (!matched_any)
         {
-            std::cerr << "No tests matched the selected filters.\n";
+            error_output << "No tests matched the selected filters.\n";
             return 2;
         }
 
@@ -207,17 +215,17 @@ class Runner
         return options;
     }
 
-    static void print_usage(const std::string_view executable)
+    static void print_usage(std::ostream& output, const std::string_view executable)
     {
-        std::cout << "Usage: " << executable << " [options]\n"
-                  << "  --list            list matching suites and tests\n"
-                  << "  --suite <name>    run one named suite\n"
-                  << "  --test <text>     run tests whose names contain <text>\n"
-                  << "  --verbose         include timing information\n"
-                  << "  --help, -h        show this help\n";
+        output << "Usage: " << executable << " [options]\n"
+               << "  --list            list matching suites and tests\n"
+               << "  --suite <name>    run one named suite\n"
+               << "  --test <text>     run tests whose names contain <text>\n"
+               << "  --verbose         include timing information\n"
+               << "  --help, -h        show this help\n";
     }
 
-    void list_tests(const Options& options) const
+    void list_tests(const Options& options, std::ostream& output) const
     {
         bool matched_any = false;
         for (const TestSuite& suite : suites_)
@@ -237,18 +245,18 @@ class Runner
 
                 if (!printed_suite)
                 {
-                    std::cout << suite.name() << '\n';
+                    output << suite.name() << '\n';
                     printed_suite = true;
                 }
 
-                std::cout << "  " << test.name << '\n';
+                output << "  " << test.name << '\n';
                 matched_any = true;
             }
         }
 
         if (!matched_any)
         {
-            std::cout << "No tests matched the selected filters.\n";
+            output << "No tests matched the selected filters.\n";
         }
     }
 

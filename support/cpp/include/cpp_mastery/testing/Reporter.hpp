@@ -23,16 +23,19 @@ struct RunSummary
 class ConsoleReporter
 {
   public:
-    explicit ConsoleReporter(const bool verbose) : verbose_{verbose} {}
+    explicit ConsoleReporter(const bool verbose, std::ostream& output = std::cout)
+        : verbose_{verbose}, output_{output}
+    {
+    }
 
     void run_started(const std::string_view title) const
     {
-        std::cout << title << "\n\n";
+        output_ << title << "\n\n";
     }
 
     void suite_started(const std::string_view name) const
     {
-        std::cout << name << '\n';
+        output_ << name << '\n';
     }
 
     void test_finished(const TestResult& result) const
@@ -47,42 +50,42 @@ class ConsoleReporter
             label = "ERROR";
         }
 
-        std::cout << "  [" << label << "] " << result.name;
+        output_ << "  [" << label << "] " << result.name;
         if (verbose_)
         {
             const auto micros =
                 std::chrono::duration_cast<std::chrono::microseconds>(result.duration);
-            std::cout << " (" << micros.count() << " us)";
+            output_ << " (" << micros.count() << " us)";
         }
-        std::cout << '\n';
+        output_ << '\n';
 
         for (const TestFailure& failure : result.failures)
         {
-            std::cout << "      " << basename(failure.file) << ':' << failure.line << '\n'
-                      << "      " << failure.expression << '\n'
-                      << "      " << failure.message << '\n';
+            output_ << "      " << basename(failure.file) << ':' << failure.line << '\n'
+                    << "      " << failure.expression << '\n'
+                    << "      " << failure.message << '\n';
         }
 
         if (result.unexpected_exception.has_value())
         {
-            std::cout << "      unexpected exception: " << *result.unexpected_exception << '\n';
+            output_ << "      unexpected exception: " << *result.unexpected_exception << '\n';
         }
     }
 
     void run_finished(const RunSummary& summary) const
     {
-        std::cout << '\n'
-                  << summary.total << " tests: " << summary.passed << " passed, " << summary.failed
-                  << " failed, " << summary.errors << " errors";
+        output_ << '\n'
+                << summary.total << " tests: " << summary.passed << " passed, " << summary.failed
+                << " failed, " << summary.errors << " errors";
 
         if (verbose_)
         {
             const auto millis =
                 std::chrono::duration_cast<std::chrono::milliseconds>(summary.duration);
-            std::cout << " (" << millis.count() << " ms)";
+            output_ << " (" << millis.count() << " ms)";
         }
 
-        std::cout << '\n';
+        output_ << '\n';
     }
 
   private:
@@ -93,6 +96,7 @@ class ConsoleReporter
     }
 
     bool verbose_ = false;
+    std::ostream& output_;
 };
 
 } // namespace cpp_mastery::test
