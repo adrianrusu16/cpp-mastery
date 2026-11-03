@@ -152,3 +152,25 @@ ctest --preset gcc16 -R '^config\.(render-distance|engine-config)$' --output-on-
 ```
 
 After this lesson, the complete repository should register **17 CTest suites**.
+
+## Phase 2 / Lesson 5 — Strong exception guarantee and RAII
+
+`runtime::RuntimeState` owns a pair of render buffers and committed runtime settings.
+The `ResourceFactory` seam supports deterministic failure injection. The included
+`CpuResourceFactory` allocates real CPU-backed byte storage as a lightweight
+substitute for GPU resources; it does not call any GPU API.
+
+- Prepare two resources into a local `ResourceSet` owned by `std::unique_ptr`.
+- If the second allocation fails, RAII automatically frees the first.
+- The original settings and both original resource handles remain unchanged.
+- Commit only after all allocations succeed: non-throwing `unique_ptr::swap`
+  followed by non-throwing assignment of two integers.
+- After swapping, the staging object's destructor releases the old resources.
+- The factory is assumed not to mutate the active runtime as an external side
+  effect. That limitation matters for real GPU queues and worker pools.
+
+The RED implementation intentionally updates `worker_threads` before preparation.
+GREEN moves that assignment into the non-throwing commit.
+
+Run `ctest --preset gcc16 -R '^runtime\.transaction$' --output-on-failure`.
+The completed project registers **18** CTest entries.
