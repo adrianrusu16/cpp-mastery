@@ -12,6 +12,7 @@ if(BUILD_TESTING)
         cpp/tests/assertion_semantics_tests.cpp
         cpp/tests/runner_tests.cpp
         cpp/tests/reporter_tests.cpp
+        cpp/tests/runner_hardening_tests.cpp
     )
     target_link_libraries(cpp_mastery_testing_self_tests PRIVATE cpp_mastery::testing)
     cpp_mastery_configure_target(cpp_mastery_testing_self_tests)

@@ -153,9 +153,14 @@ class Runner
             }
             test.function();
         }
-        catch (const AbortTest&)
+        catch (const AbortTest& abort)
         {
-            // REQUIRE intentionally aborts only the current test.
+            // Only a framework-generated fatal assertion with a recorded failure is expected.
+            if (!abort.from_assertion() || result.failures.empty())
+            {
+                result.unexpected_exception =
+                    "AbortTest escaped without a recorded fatal assertion";
+            }
         }
         catch (const std::exception& error)
         {

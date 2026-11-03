@@ -70,7 +70,7 @@ inline void check(const bool condition, const std::string_view expression, const
     record_failure(std::string{expression}, "condition evaluated to false", location);
     if (mode == FailureMode::abort_test)
     {
-        throw AbortTest{};
+        AbortTestAccess::raise();
     }
 }
 
@@ -94,7 +94,7 @@ void check_equal(const Actual& actual, const Expected& expected,
 
     if (mode == FailureMode::abort_test)
     {
-        throw AbortTest{};
+        AbortTestAccess::raise();
     }
 }
 
@@ -117,7 +117,7 @@ void check_not_equal(const Actual& actual, const Expected& expected,
 
     if (mode == FailureMode::abort_test)
     {
-        throw AbortTest{};
+        AbortTestAccess::raise();
     }
 }
 
@@ -170,7 +170,7 @@ void check_throws_as(Callable&& callable, const std::string_view expression,
 
     if (mode == FailureMode::abort_test)
     {
-        throw AbortTest{};
+        AbortTestAccess::raise();
     }
 }
 
@@ -195,7 +195,7 @@ void check_no_throw(Callable&& callable, const std::string_view expression, cons
 
     if (mode == FailureMode::abort_test)
     {
-        throw AbortTest{};
+        AbortTestAccess::raise();
     }
 }
 
