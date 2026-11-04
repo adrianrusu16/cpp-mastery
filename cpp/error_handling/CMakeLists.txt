@@ -52,6 +52,7 @@ add_library(cpp_mastery_runtime STATIC
     src/GpuRetirementQueue.cpp
     src/MultiQueueGpuRetirementQueue.cpp
     src/CrossQueueHandoff.cpp
+    src/CoordinatedRuntime.cpp
 )
 target_include_directories(cpp_mastery_runtime PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -70,6 +71,7 @@ if(BUILD_TESTING)
         tests/runtime_gpu_retirement_tests.cpp
         tests/runtime_multi_queue_retirement_tests.cpp
         tests/runtime_cross_queue_handoff_tests.cpp
+        tests/runtime_coordinated_pipeline_tests.cpp
     )
     target_link_libraries(cpp_mastery_runtime_tests PRIVATE
         cpp_mastery::runtime
@@ -78,6 +80,6 @@ if(BUILD_TESTING)
     cpp_mastery_configure_target(cpp_mastery_runtime_tests)
     cpp_mastery_add_suite_tests(runtime cpp_mastery_runtime_tests
         transaction worker-pool snapshot-publication gpu-retirement multi-queue-retirement
-        cross-queue-handoff
+        cross-queue-handoff coordinated-pipeline
     )
 endif()

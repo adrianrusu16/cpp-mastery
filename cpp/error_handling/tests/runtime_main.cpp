@@ -6,6 +6,7 @@ cpp_mastery::test::TestSuite make_runtime_snapshot_publication_suite();
 cpp_mastery::test::TestSuite make_runtime_gpu_retirement_suite();
 cpp_mastery::test::TestSuite make_runtime_multi_queue_retirement_suite();
 cpp_mastery::test::TestSuite make_runtime_cross_queue_handoff_suite();
+cpp_mastery::test::TestSuite make_runtime_coordinated_pipeline_suite();
 
 int main(int argc, char** argv)
 {
@@ -16,5 +17,6 @@ int main(int argc, char** argv)
     runner.add(make_runtime_gpu_retirement_suite());
     runner.add(make_runtime_multi_queue_retirement_suite());
     runner.add(make_runtime_cross_queue_handoff_suite());
+    runner.add(make_runtime_coordinated_pipeline_suite());
     return runner.run(argc, argv);
 }

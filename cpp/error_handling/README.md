@@ -325,3 +325,40 @@ if the wait scope or ownership handoff is missing. GREEN checks all requirements
 
 Run `ctest --preset gcc16 -R '^runtime\.cross-queue-handoff$' --output-on-failure`.
 After Lesson 10 the repository registers **23** CTest suites.
+
+## Phase 2 / Lesson 11 — Coordinated submission admission
+
+`CoordinatedRuntime` composes immutable `RuntimeSnapshot` ownership, the Lesson 9
+`MultiQueueGpuRetirementQueue`, and a Lesson 10 `CrossQueueHandoff` readiness check.
+One synchronized admission protocol protects a snapshot between selection and GPU
+submission registration:
+
+- `acquire()` gives a CPU-only immutable snapshot. It is **not** GPU permission.
+- `admit()` records an outstanding ticket under the same mutex as publication.
+- `publish()` stages new resources privately and publishes them atomically. Old
+  generations remain tracked while tickets are outstanding.
+- A successful `Admission::submit(queue)` records a modeled accepted GPU use and
+  consumes its ticket; a failed submission retains the ticket for retry/cancellation.
+- `Admission::cancel()` and its destructor release pending tickets without issuing
+  phantom GPU submissions. An old generation is sealed only after all tickets
+  resolve. Retirement then observes each queue's independent completion timeline.
+- `submit_graphics_after(handoff)` requires the Lesson 10 logical cross-queue
+  synchronization precondition before registering a graphics use. This is a
+  CPU teaching check, **not** a real Vulkan submit or ownership transfer.
+
+`CoordinatedRuntime` is single-writer for `publish()`, but readers and admission
+operations may run concurrently. A ticket retains its internal coordinator state,
+so cancellation is safe even if the public controller has been destroyed.
+
+The mock `submit()` is the **acceptance boundary**. A real Vulkan integration
+would need another reservation/rollback protocol around a fallible `vkQueueSubmit`.
+The simulation does not execute GPU work and has no real device-loss or shutdown
+semantics. The owner must ensure real GPU operations are quiescent before actual
+resource destruction. Do not independently submit snapshots through a separate
+retirement queue, since that bypasses this controller's admission lock.
+
+RED seals retired snapshots before previously granted admissions resolve. GREEN
+waits for the pending count to reach zero before sealing.
+
+Run `ctest --preset gcc16 -R '^runtime\.coordinated-pipeline$' --output-on-failure`.
+After Lesson 11 the project registers **24** CTest suites.
