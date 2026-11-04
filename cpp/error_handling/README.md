@@ -229,3 +229,40 @@ the replacement first, then publishes it as one atomic operation.
 
 Run `ctest --preset gcc16 -R '^runtime\.snapshot-publication$' --output-on-failure`.
 After Lesson 7 the full repository registers **20** CTest suites.
+
+## Phase 2 / Lesson 8 — Deferred resource retirement with a GPU timeline
+
+`GpuRetirementQueue` is a **CPU-only simulation** of one ordered GPU submission
+domain. It does not send GPU commands or use Vulkan. A single controller uses
+`submit(snapshot)` to register a submission and its owning snapshot; only
+after preventing *all new submissions* referencing that snapshot may it call
+`retire(snapshot)`. Retire seals the snapshot against later submits, even
+when collection has removed its GPU record but CPU readers still own it.
+Weak tombstones retain control-block identity without extending resource lifetime.
+
+`complete_through(serial)` advances a monotone, contiguous completion high-water
+mark, bounded by the last issued submission ID. `collect()` releases only
+retired snapshots whose **last** recorded submission is completed. Collection
+works with out-of-order retirement registrations; a late retirement with no
+GPU use is immediately eligible. CPU readers' shared pointers remain valid
+independently of GPU completion. The queue owns its tracked snapshots until
+collection, even if the publisher and its readers release their references.
+
+Safety boundaries: this is a **single-controller API**, not thread-safe.
+Callers must synchronize readers / submissions with the retirement boundary.
+A reader that acquired an old snapshot must not submit GPU work after its
+retirement; the queue rejects a late submit, but it cannot enforce a complete
+external GPU submission protocol. One completion high-water mark is correct
+only for one ordered domain; independent queues need separate dependencies.
+For real Vulkan, timeline semaphore/fence completion must be queried from the
+actual queue, and shutdown must drain in-flight uses before destroying the
+retirement manager. Neither ASan nor UBSan substitutes for that synchronization.
+`std::shared_ptr` also does not protect the GPU if a command referencing a raw
+GPU resource escaped registration.
+
+RED intentionally collects all retired snapshots even when GPU submissions
+are outstanding. GREEN fixes the eligibility test while retaining the same
+public API, error checks, and ownership contracts.
+
+Run `ctest --preset gcc16 -R '^runtime\.gpu-retirement$' --output-on-failure`.
+The completed repository should register **21** CTest suites.

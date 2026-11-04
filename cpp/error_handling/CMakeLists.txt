@@ -49,6 +49,7 @@ add_library(cpp_mastery_runtime STATIC
     src/ParkedWorkerPool.cpp
     src/WorkerRuntime.cpp
     src/SnapshotRuntime.cpp
+    src/GpuRetirementQueue.cpp
 )
 target_include_directories(cpp_mastery_runtime PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -64,6 +65,7 @@ if(BUILD_TESTING)
         tests/runtime_transaction_tests.cpp
         tests/runtime_worker_transaction_tests.cpp
         tests/runtime_snapshot_publication_tests.cpp
+        tests/runtime_gpu_retirement_tests.cpp
     )
     target_link_libraries(cpp_mastery_runtime_tests PRIVATE
         cpp_mastery::runtime
@@ -71,6 +73,6 @@ if(BUILD_TESTING)
     )
     cpp_mastery_configure_target(cpp_mastery_runtime_tests)
     cpp_mastery_add_suite_tests(runtime cpp_mastery_runtime_tests
-        transaction worker-pool snapshot-publication
+        transaction worker-pool snapshot-publication gpu-retirement
     )
 endif()
