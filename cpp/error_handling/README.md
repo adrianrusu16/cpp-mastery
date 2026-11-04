@@ -201,3 +201,31 @@ reliably simulate failure at the **fifth thread** after four have parked.
 
 Run `ctest --preset gcc16 -R '^runtime\.worker-pool$' --output-on-failure`.
 After this lesson the project registers **19** CTest entries.
+
+## Phase 2 / Lesson 7 — Immutable snapshots for concurrent readers
+
+`SnapshotRuntime` is a deliberately **separate** single-writer publisher. It
+uses `std::atomic<std::shared_ptr<const RuntimeSnapshot>>` for publication and
+reader ownership. Readers call `acquire()` and retain the returned handle while
+reading settings and render-buffer metadata. The snapshot is immutable after
+construction; its CPU-backed resources remain alive until the last reader lets go.
+
+- Resource preparation may throw and is never published partially.
+- Publish a complete snapshot with release semantics; acquire with acquire
+  semantics. A reader can see the old or new snapshot, never a half-built one.
+- If a factory throws or returns a null buffer, the published snapshot remains
+  unchanged, and staging is destroyed through RAII.
+- The tests use an intentionally blocked second allocation to expose the RED
+  publication gap deterministically, without relying on scheduling luck.
+- An immutable snapshot prevents data races on the settings and buffer metadata,
+  but the atomic `shared_ptr` is **not necessarily lock-free**.
+- This component does not activate, stop, or retire worker pools; GPU command
+  completion and deferred GPU destruction also remain out of scope.
+- Updates are single-writer; multiple concurrent writers would need additional
+  serialization or compare-and-exchange logic to prevent lost updates.
+
+RED clears the current snapshot before preparing the replacement; GREEN stages
+the replacement first, then publishes it as one atomic operation.
+
+Run `ctest --preset gcc16 -R '^runtime\.snapshot-publication$' --output-on-failure`.
+After Lesson 7 the full repository registers **20** CTest suites.
