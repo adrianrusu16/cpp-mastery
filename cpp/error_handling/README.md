@@ -266,3 +266,32 @@ public API, error checks, and ownership contracts.
 
 Run `ctest --preset gcc16 -R '^runtime\.gpu-retirement$' --output-on-failure`.
 The completed repository should register **21** CTest suites.
+
+## Phase 2 / Lesson 9 — Multiple independent GPU completion timelines
+
+`runtime::MultiQueueGpuRetirementQueue` is a separate CPU-only simulation of
+**graphics, compute, and transfer**, each with its own ordered submission and
+completion serial. Submission 12 on graphics cannot be compared with submission
+7 on compute. The queue tracks each snapshot's LAST use independently in all
+three domains. Zero means it was never used on that queue.
+
+- RED intentionally releases a retired snapshot when **any** used queue has
+  completed. Seven tests expose premature destruction.
+- GREEN requires **every used queue** to have completed its last submission.
+  Unused queues impose no completion requirement.
+- CPU `shared_ptr` readers may keep the snapshot alive after the queue drops
+  its own reference. Weak tombstones reject late submission of a retired
+  snapshot while a CPU owner still holds it.
+- `submit` advances only the selected queue's counter, after any required
+  record allocation succeeds. `complete_through` rejects regression and
+  completion beyond the corresponding queue's submitted serial.
+- `retire` seals the snapshot. Its two potentially allocating steps use a
+  rollback path so allocation failure leaves the registration unchanged.
+- Single-controller API: callers serialize submissions, retirement and
+  completion reports, and stop new submissions before `retire`.
+- This is NOT Vulkan: the caller must supply truthful completion events. Real
+  cross-queue hazards also require explicit synchronization, memory barriers,
+  queue-family ownership handling, and coordinated shutdown before queue teardown.
+
+Run `ctest --preset gcc16 -R '^runtime\.multi-queue-retirement$' --output-on-failure`.
+After Lesson 9, the project registers **22** CTest suites.
