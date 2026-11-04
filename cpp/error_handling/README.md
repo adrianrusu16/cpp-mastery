@@ -295,3 +295,33 @@ three domains. Zero means it was never used on that queue.
 
 Run `ctest --preset gcc16 -R '^runtime\.multi-queue-retirement$' --output-on-failure`.
 After Lesson 9, the project registers **22** CTest suites.
+
+## Phase 2 / Lesson 10 — Transfer-to-graphics execution and ownership handoff
+
+`CrossQueueHandoff` is a separate CPU-only model for one mesh buffer, transfer
+writes, and graphics reads. A transfer timeline signal and graphics wait model
+an execution AND memory dependency; the wait must cover the vertex-input stage.
+A wait at `fragment_shader` does not cover a vertex-input read.
+
+- For `HandoffSharing::concurrent`, ownership handoff barriers are unnecessary,
+  but semaphore signal/wait synchronization is still required.
+- For `HandoffSharing::exclusive` with the same queue-family index, no queue-family
+  ownership transfer is required, but cross-queue execution ordering is still needed.
+- For exclusive sharing across different queue families, a matching release and
+  acquire are mandatory, ordered by a signal/wait pair. This simplified model
+  uses `all_commands` for the wait scope on ownership transfers, matching the
+  default path without Vulkan's optional ownership-transfer-all-stages extension.
+- An additional transfer write invalidates the prior synchronization and
+  ownership records until a NEW signal, wait, release, and acquire are made.
+- A pending or invalid handoff causes `graphics_read()` to throw rather than
+  claim that a read is safe. The simulator does not execute GPU commands.
+- Only a single controller may call this model's methods. This lesson models
+  no graphics-to-transfer return handoff, memory-range tracking, image layouts,
+  GPU completion, memory barriers beyond the abstract handoff, or Vulkan APIs.
+- Retirement queues in Lessons 8/9 are distinct from this synchronization model.
+
+RED deliberately treats any signaled/waited transfer value as sufficient, even
+if the wait scope or ownership handoff is missing. GREEN checks all requirements.
+
+Run `ctest --preset gcc16 -R '^runtime\.cross-queue-handoff$' --output-on-failure`.
+After Lesson 10 the repository registers **23** CTest suites.
