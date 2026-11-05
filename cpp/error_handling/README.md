@@ -362,3 +362,51 @@ waits for the pending count to reach zero before sealing.
 
 Run `ctest --preset gcc16 -R '^runtime\.coordinated-pipeline$' --output-on-failure`.
 After Lesson 11 the project registers **24** CTest suites.
+
+## Phase 2 / Lesson 12 — Submission failure recovery without fictional GPU work
+
+`SubmissionRecoveryRuntime` composes Lesson 11's `CoordinatedRuntime` admission
+with a CPU-only backend that reports whether a simulated GPU submit was accepted.
+The model distinguishes four outcomes:
+
+| Backend result | Action | GPU serial issued? |
+|---|---|---|
+| `accepted` | Register the admitted use on its queue | Yes, on successful registration |
+| `not_enqueued` | Cancel the admission | No |
+| `unknown` / backend throws | Quarantine the admission for explicit resolution | No, until acceptance is confirmed |
+| `device_lost` | Quarantine the attempt; enter fail-closed state | No new serial |
+
+**RED bug:** it treats `unknown` as a confirmed rejection and cancels the
+admission prematurely. A later publication may retire resources while GPU
+acceptance is still unverified. **GREEN** retains a move-only admission in an
+incident record. Only `confirm_not_enqueued(id)` may cancel it; otherwise
+`confirm_accepted(id)` registers the GPU use. An incident can be resolved once.
+
+- Preallocate recovery-record capacity *before* calling the backend. If backend
+  acceptance is confirmed but registration throws, retain the admission as a
+  `registration_pending` incident. Retrying registration never resubmits work
+  to the backend. An accepted incident cannot be marked `not_enqueued`.
+- The wrapper is single-controller, but it composes with the coordinator's
+  serialized publication/submission protocol. Backend callbacks must not
+  recursively access the wrapper; no actual driver call takes place.
+- Uncertain outcomes remain unresolved until external evidence establishes
+  acceptance or rejection. A thrown exception is **not** proof of rejection.
+- `device_lost` blocks further admissions, publications, completions, and
+  collections. This lesson does not implement device reset/recreation or
+  establish device quiescence; callers must not destroy real GPU resources on
+  the strength of this simulation alone.
+- Failure *before* a backend call (for example, bookkeeping allocation) causes
+  no external submission. The moved ticket is safely cancelled by RAII.
+- As in previous lessons, retained CPU readers can outlive collection.
+
+Fast local RED/GREEN check:
+
+```sh
+cmake --preset gcc16
+cmake --build --preset gcc16
+ctest --preset gcc16 -R '^runtime\.submission-recovery$' --output-on-failure
+```
+
+After GREEN, run the existing complete GCC suite and focused runtime sanitizers;
+there is no need to use `--clean-first` or rebuild four toolchains locally.
+The full repository should register **25 CTest suites** after Lesson 12.
