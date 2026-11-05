@@ -410,3 +410,39 @@ ctest --preset gcc16 -R '^runtime\.submission-recovery$' --output-on-failure
 After GREEN, run the existing complete GCC suite and focused runtime sanitizers;
 there is no need to use `--clean-first` or rebuild four toolchains locally.
 The full repository should register **25 CTest suites** after Lesson 12.
+
+## Phase 2 / Lesson 13 — Device loss, quarantine, and backend generations
+
+`DeviceRecoveryRuntime` adds a CPU-only recovery coordinator around Lesson 12.
+Device loss **freezes** submission, publication, incident resolution, and
+completion changes. Quarantined ownership stays alive even if an incident's
+backend acceptance remains unknown. `collect()` returns zero while frozen.
+
+- `BackendGeneration` identifies the backend that owns a submission timeline.
+  A new generation starts fresh serials; stale completions and submissions
+  must be rejected, even if their numeric serial is the same.
+- Only a **trusted** `SafeTeardownAuthority` may confirm that old GPU resource
+  use has ended for the *specific* frozen generation. That authority is a
+  simulated external proof boundary, **not a Vulkan API implementation**.
+- RED deliberately skips this proof and can destroy quarantined GPU owners
+  prematurely. GREEN checks it before preparing and publishing a replacement.
+- A failed proof, throwing authority, or failed new-resource preparation leaves
+  the old generation frozen, with its incidents and resources intact.
+- An accepted proof permits dropping only the coordinator's ownership; any
+  remaining CPU `shared_ptr` reader still extends the snapshot lifetime.
+- One controller serializes the wrapper's calls. Backend object identity, real
+  Vulkan device-loss teardown guarantees, and physical GPU memory deallocation
+  are the responsibility of a future backend adapter. In particular, the
+  application must not destroy a quarantined real GPU controller before its
+  safe teardown has been confirmed; this CPU simulator cannot enforce process
+  lifetime against premature owner destruction.
+
+Run the focused suite with:
+
+```sh
+ctest --preset gcc16 -R '^runtime\.device-recovery$' --output-on-failure
+```
+
+After GREEN, expect **26** repository CTest suites. For efficient validation,
+run the full `gcc16` suite plus `gcc16-sanitize -R '^runtime\.'`; avoid
+`--clean-first` unless a full rebuild is specifically needed.
