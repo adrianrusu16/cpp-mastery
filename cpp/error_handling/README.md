@@ -578,3 +578,32 @@ returns recorded states without replaying side effects.
 
 Focused test: `ctest --preset gcc16 -R '^runtime\.durable-journal$' --output-on-failure`.
 After GREEN, the complete repository registers **30 CTest suites** (13 runtime suites).
+
+## Phase 2 / Lesson 18 — Authoritative reconciliation after a crash
+
+`AuthoritativeActivationReconciler` consumes Lesson 17's **durable intent** and
+queries a trusted `ActivationStatusAuthority` by the recorded attempt ID and
+backend generation. It models a CPU-only crash-recovery decision: it does **not**
+reconstruct a Vulkan device, adopt live GPU objects, or certify teardown safety.
+
+- A missing attempt ID is rejected without querying the authority. A terminal
+  journal entry is replayed without querying or performing activation again.
+- A pending attempt can transition to `started` or `not_started` **only** if the
+  authority replies with the matching ID and generation and explicit evidence.
+  This transition uses the journal's `fsync()`-backed `confirm()` method.
+- `unavailable` status or an authority exception retains the pending intent.
+  It never triggers automatic activation or authorizes another request ID.
+- A stale, mismatched or invalid reply is rejected without changing the journal.
+  A disk failure while persisting confirmation also leaves the attempt pending.
+- Once authoritative negative acknowledgement is durably recorded, the journal
+  permits a **new** attempt ID; it never reuses the original ID to issue a new
+  activation. A started result means activation started, not that the backend's
+  GPU resources can be reused or destroyed.
+
+RED intentionally maps `unavailable` to `not_started`, demonstrating how a
+transient query outage can incorrectly authorize duplicate external work.
+GREEN remains pending until evidence arrives. Both stages must compile under
+strict `-Werror`, and RED must fail only through deterministic assertions.
+
+Run: `ctest --preset gcc16 -R '^runtime\.authoritative-reconciliation$' --output-on-failure`.
+The completed project registers **31 CTest suites** (14 runtime suites).
