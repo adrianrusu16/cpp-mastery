@@ -537,3 +537,44 @@ GREEN returns the recorded result and avoids duplicate external activation.
 
 Run: `ctest --preset gcc16 -R '^runtime\.idempotent-activation$' --output-on-failure`.
 The completed project registers **29 CTest suites** (12 runtime suites).
+
+## Phase 2 / Lesson 17 — Durable activation journal and crash-safe replay
+
+`DurableActivationJournal` adds an append-only **write-ahead intent record** to
+Lesson 16's stable activation attempt IDs. This is a separate CPU-only
+**activation dispatch boundary**, not a restored Vulkan/GPU runtime. Each record
+contains the caller-supplied ID, requested backend generation, configuration,
+and a checksum. Its `I`, `S`, and `N` records mean intent, confirmed started,
+and confirmed not started, respectively.
+
+- A new `I` record is written and `fsync()`'d **before** calling the backend.
+  Creating the journal also requires an `fsync()` of its parent directory.
+- If the activation result is known, append and `fsync()` its terminal `S` or
+  `N` record. An exception or unknown result leaves the `I` entry pending.
+- After restart, a matching pending request **does not call activate() again**.
+  Reconcile its outcome with an independent trusted authority and use
+  `confirm()`. Conflicting IDs or confirmations are refused.
+- Injected failures before intent writing cannot call the backend. Failures
+  before the terminal record leave the durable intent pending, not successful.
+- An exclusive advisory Linux file lock prevents simultaneous writers. Torn,
+  corrupt, or invalid state-transition records fail closed; there is deliberately
+  no automatic truncation/repair. This lab has an explicit 4 MB log cap and no
+  compaction, multi-process coordinator, cross-filesystem guarantees, or
+  recovery from storage hardware violating `fsync()` guarantees.
+
+**Scope:** a journal status of `started` is **not** proof that a new live GPU
+backend was committed or that an old one can be destroyed. Real reconstruction
+still requires authoritative teardown and reconciliation from Lessons 13–16.
+`JournalActivationBackend` must correlate the stable ID with its external
+activation; without authoritative backend deduplication, exactly-once effects
+across machine failure cannot be promised. Keep the journal's directory on a
+local filesystem with appropriate durability guarantees; do not use an
+untrusted NFS mount as a substitute for a durable coordinator.
+
+RED deliberately dispatches activation before persisting its intent and calls
+activation again when a pending ID is replayed. It must **compile with `-Werror`**
+and fail through deterministic assertions only. GREEN writes intent first and
+returns recorded states without replaying side effects.
+
+Focused test: `ctest --preset gcc16 -R '^runtime\.durable-journal$' --output-on-failure`.
+After GREEN, the complete repository registers **30 CTest suites** (13 runtime suites).
