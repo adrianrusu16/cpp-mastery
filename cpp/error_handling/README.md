@@ -506,3 +506,34 @@ when activation never started. GREEN requires affirmative activation success.
 
 Focused test: `ctest --preset gcc16 -R '^runtime\.activation-recovery$' --output-on-failure`.
 After GREEN, the complete repository registers **28 CTest suites** and 11 runtime suites.
+
+## Phase 2 / Lesson 16 — Idempotent recovery activation requests
+
+`IdempotentActivationRuntime` wraps Lesson 15 with a **caller-supplied, nonzero
+attempt ID**. A replay of the same ID and original input returns its previously
+observed status without rebuilding a backend, contacting the teardown authority,
+or calling `activate()` again. Different inputs with the same ID are rejected.
+
+- **Pending**: unknown activation outcome; same-key retries report pending, while
+  other keys are blocked. Resolve the original attempt with external evidence.
+- **Committed**: replay returns the originally committed backend generation,
+  even after newer generations have been committed.
+- **Not started**: a confirmed no-start or failed preparation records a terminal
+  identity; a real new attempt **must use a new ID**.
+- A resolution of the same outcome is idempotent; contradictory resolutions fail.
+  A failed commit during resolution preserves the pending identity for retry.
+- Bookkeeping is reserved before invoking external recovery. These records grow
+  for the lifetime of the coordinator; production code needs a bounded/durable
+  history policy. This course guarantees **in-process at-most-once dispatch per
+  attempt ID**, not exactly-once behavior across crashes or independent workers.
+- The real backend must supply authoritative activation outcomes. Device loss or
+  a thrown activation call does not prove that external work did not start.
+- The owner must retain the controller while a possibly active backend remains
+  pending. The wrapper is deliberately single-controller, not multiwriter-safe.
+
+RED intentionally rejects same-ID replays while pending/committed and invokes
+activation twice when a confirmed no-start request is retried under the same ID.
+GREEN returns the recorded result and avoids duplicate external activation.
+
+Run: `ctest --preset gcc16 -R '^runtime\.idempotent-activation$' --output-on-failure`.
+The completed project registers **29 CTest suites** (12 runtime suites).
