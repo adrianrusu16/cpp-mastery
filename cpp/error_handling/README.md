@@ -480,3 +480,29 @@ backend builders with no irreversible external effects before publication.
 Run `ctest --preset gcc16 -R '^runtime\.backend-reconstruction$' --output-on-failure`.
 After GREEN, the full repository registers **27 CTest suites**, including
 **10 runtime suites**.
+
+## Phase 2 / Lesson 15 — Activation failure is not ordinary RAII rollback
+
+`ActivationRecoveryRuntime` prepares a backend and both resources before attempting
+activation. A confirmed **not_started** outcome discards staging and leaves the old
+generation quarantined. The RED version incorrectly commits a generation even
+when activation never started. GREEN requires affirmative activation success.
+
+- A failed build or either resource allocation happens before activation; RAII
+  cleans up the staged resources, without changing generation identity.
+- An activation exception is **unknown**, not confirmed failure. The wrapper
+  retains the staged backend and resources, blocks retry, and requires external
+  resolution before publishing or discarding them.
+- A confirmed started activation commits the fully prepared new generation. If
+  coordinator registration throws, the staged backend remains retained for a
+  subsequent confirmed-started resolution/retry.
+- Generation-specific safe teardown authority is required before preparation.
+  An old CPU snapshot may keep its former backend alive via existing leases.
+- This CPU-only model assumes one serialized controller and a trusted external
+  resolution for activation. Real GPU activation may perform irreversible work,
+  which cannot be undone merely by destroying a C++ object. Keep this controller
+  alive during uncertainty; its destructor is NOT a real device teardown proof.
+- A successfully running initial backend is an explicit constructor precondition.
+
+Focused test: `ctest --preset gcc16 -R '^runtime\.activation-recovery$' --output-on-failure`.
+After GREEN, the complete repository registers **28 CTest suites** and 11 runtime suites.

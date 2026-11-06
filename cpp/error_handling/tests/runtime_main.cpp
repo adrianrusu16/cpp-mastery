@@ -10,6 +10,7 @@ cpp_mastery::test::TestSuite make_runtime_coordinated_pipeline_suite();
 cpp_mastery::test::TestSuite make_runtime_submission_recovery_suite();
 cpp_mastery::test::TestSuite make_runtime_device_recovery_suite();
 cpp_mastery::test::TestSuite make_runtime_backend_reconstruction_suite();
+cpp_mastery::test::TestSuite make_runtime_activation_recovery_suite();
 
 int main(int argc, char** argv)
 {
@@ -24,5 +25,6 @@ int main(int argc, char** argv)
     runner.add(make_runtime_submission_recovery_suite());
     runner.add(make_runtime_device_recovery_suite());
     runner.add(make_runtime_backend_reconstruction_suite());
+    runner.add(make_runtime_activation_recovery_suite());
     return runner.run(argc, argv);
 }
