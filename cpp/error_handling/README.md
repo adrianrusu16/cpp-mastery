@@ -446,3 +446,37 @@ ctest --preset gcc16 -R '^runtime\.device-recovery$' --output-on-failure
 After GREEN, expect **26** repository CTest suites. For efficient validation,
 run the full `gcc16` suite plus `gcc16-sanitize -R '^runtime\.'`; avoid
 `--clean-first` unless a full rebuild is specifically needed.
+
+## Phase 2 / Lesson 14 — Transactional backend reconstruction
+
+`TransactionalBackendRuntime` extends device-loss recovery to a staged backend
+object and the two snapshot resources. The `ReconstructionBuilder` creates an
+unpublished backend, and `LeasedFactory` wraps its buffers with owning backend
+leases. This keeps the backend object alive while an old CPU reader retains a
+snapshot, even after a newer generation is published.
+
+- Verify safe teardown for the **specific old generation** before constructing
+  the replacement. The authority is consulted once per attempt.
+- Prepare an entire new backend and both snapshot resources before committing.
+  Backend creation, geometry allocation, and lighting allocation may all throw.
+- If preparation fails, RAII releases the staged geometry and backend; the old
+  generation, pending admissions and unresolved incidents remain quarantined.
+- On success, commit via the existing coordinator, then swap the backend pointer
+  without throwing. New submission serials are separate from old generations.
+- A rejected/throwing authority, null backend, incorrect generation identity,
+  or null resource prevents publication. A failed attempt can be retried.
+
+The RED implementation commits the next generation using the *old* backend
+before it validates the new backend's two resources. The GREEN implementation
+uses the newly staged backend as the factory during the coordinator's
+transactional rebuild. Expect the RED suite to fail intentionally.
+
+**Safety boundary:** this is a CPU-only teaching model, not a Vulkan implementation.
+A real GPU backend must prove safe teardown through documented guarantees.
+The owner must remain alive during quarantine; a `shared_ptr` alone does not
+prove an actual GPU is idle. The model assumes a serialized controller and
+backend builders with no irreversible external effects before publication.
+
+Run `ctest --preset gcc16 -R '^runtime\.backend-reconstruction$' --output-on-failure`.
+After GREEN, the full repository registers **27 CTest suites**, including
+**10 runtime suites**.
