@@ -607,3 +607,31 @@ strict `-Werror`, and RED must fail only through deterministic assertions.
 
 Run: `ctest --preset gcc16 -R '^runtime\.authoritative-reconciliation$' --output-on-failure`.
 The completed project registers **31 CTest suites** (14 runtime suites).
+
+
+## Phase 2 / Lesson 19 — Durable authority epochs and fencing
+
+`AuthorityEpochLedger` records a monotonically increasing **authority owner epoch**
+using checksummed append-only records, `write()`/`fsync()`, an exclusive advisory
+file lock, and a directory `fsync()`. The privileged backend ownership controller
+must advance the ledger **before** allowing the replacement authority to answer.
+An empty ledger grants no authority. A stale or rolled-back ledger must never
+be silently accepted; a real deployment needs a trusted source of ownership
+and protection against external tampering or file rollback.
+
+`FencedActivationReconciler` combines Lesson 17's durable attempt journal with
+Lesson 19's epoch ledger. It queries using the current epoch and validates the
+attempt ID, backend generation, and returned epoch. **Stale replies do not
+resolve the pending activation**, even if the authority reports `not_started`.
+A second check after the external callback rejects responses when the owner
+changed during the query. Future epochs are not self-authorizing. `unavailable`
+or thrown queries still preserve pending intent.
+
+This is a CPU-only, one-controller simulation. The external backend must also
+enforce fencing of side effects; otherwise an obsolete owner can still perform
+operations even though this reconciliation layer rejects its evidence. The
+journal does not restore actual GPU ownership or establish safe teardown.
+
+Focused suite: `runtime.fenced-reconciliation`; GREEN registers **32 total CTest
+suites** (15 runtime suites) on the actual CachyOS repo. RED deliberately accepts
+stale evidence, showing why ID and generation matching are insufficient.

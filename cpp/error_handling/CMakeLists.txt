@@ -60,6 +60,7 @@ add_library(cpp_mastery_runtime STATIC
     src/IdempotentActivationRuntime.cpp
     src/DurableActivationJournal.cpp
     src/AuthoritativeActivationReconciler.cpp
+    src/FencedActivationReconciler.cpp
 )
 target_include_directories(cpp_mastery_runtime PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -86,6 +87,7 @@ if(BUILD_TESTING)
         tests/runtime_idempotent_activation_tests.cpp
         tests/runtime_durable_activation_journal_tests.cpp
         tests/runtime_authoritative_reconciliation_tests.cpp
+        tests/runtime_fenced_reconciliation_tests.cpp
     )
     target_link_libraries(cpp_mastery_runtime_tests PRIVATE
         cpp_mastery::runtime
@@ -94,6 +96,6 @@ if(BUILD_TESTING)
     cpp_mastery_configure_target(cpp_mastery_runtime_tests)
     cpp_mastery_add_suite_tests(runtime cpp_mastery_runtime_tests
         transaction worker-pool snapshot-publication gpu-retirement multi-queue-retirement
-        cross-queue-handoff coordinated-pipeline submission-recovery device-recovery backend-reconstruction activation-recovery idempotent-activation durable-journal authoritative-reconciliation
+        cross-queue-handoff coordinated-pipeline submission-recovery device-recovery backend-reconstruction activation-recovery idempotent-activation durable-journal authoritative-reconciliation fenced-reconciliation
     )
 endif()
