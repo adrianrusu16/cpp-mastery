@@ -664,3 +664,25 @@ of scope. The lesson does not imply crash-safe device reconstruction.
 Focused CTest: `runtime.backend-fencing`; RED is strict-compiling and fails
 8 intentional behavioral cases; GREEN has 37/37 checks passing. On the
 Lesson 19 baseline, the full project has **33 CTest suites** (16 runtime suites).
+
+
+## Phase 2 / Lesson 21 — Durable fenced activation dispatch
+
+`FencedActivationDispatcher` composes Lesson 17's fsync-backed activation journal
+with Lesson 20's backend admission gate. The journal saves a stable attempt ID,
+backend generation, and settings BEFORE invoking the fenced sink. A response that
+is lost after the backend has performed its side effect leaves a **pending**
+record. Replaying that ID, including after restart or an owner handoff, never
+re-dispatches it. A new attempt ID remains blocked until independent, fenced
+reconciliation proves the outcome. A known fence rejection is `not_started`;
+an uncertain/quarantined handoff leaves the intent pending.
+
+**Limits:** This is a single-controller, CPU-only composition exercise, not a
+transaction spanning disk and GPU. The sink must only be called via the trusted
+backend gate; the external backend and status authority must independently
+correlate the stable attempt ID. No automatic retry, cross-process global lock,
+external rollback protection, or exactly-once GPU execution is claimed.
+
+Focused suite: `runtime.fenced-dispatch`. RED deliberately repeats an existing
+identity before consulting the journal; GREEN is replay-safe. The completed
+repository should register 34 CTest suites (17 runtime suites).
