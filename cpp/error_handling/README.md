@@ -635,3 +635,32 @@ journal does not restore actual GPU ownership or establish safe teardown.
 Focused suite: `runtime.fenced-reconciliation`; GREEN registers **32 total CTest
 suites** (15 runtime suites) on the actual CachyOS repo. RED deliberately accepts
 stale evidence, showing why ID and generation matching are insufficient.
+
+
+## Phase 2 / Lesson 20 — Crash-safe handoff and backend admission fencing
+
+`FencedBackendGate` is a CPU-only trusted backend boundary, separate from
+Lesson 19's status reconciliation. Every modeled external command carries the
+owning `AuthorityEpoch` and a nonzero command ID. A single mutex serializes
+backend effect callbacks with handoff, so a handoff cannot complete while an
+old owner callback is in flight. The gate admits a command only for the current
+durable owner. Unknown, future, and stale owners cannot produce effects.
+
+`handoff()` writes the epoch to Lesson 19's append-only `AuthorityEpochLedger`
+and fsyncs **before** acknowledging the new owner. Retrying an already durable
+epoch is idempotent, including after a crash/lost acknowledgement. An uncertain
+ledger write error quarantines the entire gate (both owners) until the ledger
+is reopened and inspected. A callback failure cannot be assumed safe to retry:
+this lesson does not guarantee exactly-once effects.
+
+**Boundary:** this is a *single-process backend simulator*. Every operation
+must pass through this one trusted gate, and callbacks must not re-enter it.
+A second process, untrusted owner, device driver or actual GPU bypassing the
+gate is **not fenced** by an in-process mutex; real external backends need an
+atomic epoch check at the effect boundary and trusted cross-process storage.
+Disk rollback, power-loss storage faults, and hardware GPU effects remain out
+of scope. The lesson does not imply crash-safe device reconstruction.
+
+Focused CTest: `runtime.backend-fencing`; RED is strict-compiling and fails
+8 intentional behavioral cases; GREEN has 37/37 checks passing. On the
+Lesson 19 baseline, the full project has **33 CTest suites** (16 runtime suites).
